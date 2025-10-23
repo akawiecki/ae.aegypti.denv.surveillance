@@ -1,0 +1,17 @@
+Package: aedes.denv.surveillance
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R:
+    person("Anna", "Kawiecki", , "annakawiecki@gmail.com", role = c("aut", "cre"))
+Description: analyses for the manuscript "Detection of dengue virus in Aedes aegypti during an urban epidemic in Iquitos, Peru"
+License: MIT + file LICENSE
+ByteCompile: true
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports: here,
+    knitr (>= 1.46),
+    rmarkdown (>= 2.26)
+Suggests: devtools,
+    git2r

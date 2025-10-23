@@ -1,0 +1,4 @@
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.surveillance/analysis/data/raw_data/m.ae.pcr.pub.rds")
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.forgithub/analysis/data/raw_data/m.ae.pcr.less.vbles.rds")
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.forgithub/analysis/data/raw_data/m.ae.pcr.rds")
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.forgithub/analysis/data/raw_data/m.ae.pcr.rds")

@@ -1,0 +1,2 @@
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.forgithub/analysis/data/derived_data/h.surv.m.pcr.rds")
+load("/Users/annakawiecki/Documents/epi/project/aedes.denv.forgithub/analysis/data/derived_data/h.area.week.lag.4.rds")
