@@ -185,48 +185,6 @@ dep = TRUE)
 cmdstanr::install_cmdstan(version = "0.7.1")
 ```
 
-
-## 
-## 📦 How to Run in Your Browser or Download and Run Locally
-
-This research compendium has been developed using the statistical
-programming language **R version 4.4.0** (2024-04-24).
-
-The repository contains an RStudio project file:  
-**`aedes.denv.surveillance.Rproj`**
-
-To run the code and access the datasets:
-
-1. Download the repository as a `.zip` file using the green **Clone or download** button at the top of this page.
-2. Unzip the contents and open the `.Rproj` file in **RStudio**.
-3. Follow the instructions below to recreate the software environment.
-
----
-
-### 🧩 Project Environment: `renv`
-
-This project uses the [`renv`](https://rstudio.github.io/renv/) package to manage the R environment and ensure reproducibility across systems.
-
-#### Files and folders:
-
-- **`renv.lock`**  
-  Records the exact versions of all R packages used during the analysis, allowing anyone to recreate the same environment.
-
-- **`renv/` folder**  
-  Stores project-specific packages and metadata. It is automatically generated and isolates the environment from your global R setup.
-
----
-
-### 🛠️ To Recreate the Environment
-
-1. Open the `.Rproj` file in RStudio.
-2. Run the following in the R console:
-
-```r
-install.packages("renv")  # if renv is not already installed
-renv::restore()
-
-
 ## How to cite
 
 Please cite this compendium as:
