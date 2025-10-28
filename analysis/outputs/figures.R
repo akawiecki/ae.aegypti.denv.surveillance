@@ -17,7 +17,6 @@
 
 # ---- 0.1 Read in R libraries ----
 
-<<<<<<< HEAD
 # Handles relative file paths in a project-agnostic way
 library(here)
 
@@ -35,20 +34,6 @@ library(cowplot)
 
 # For combining multiple ggplot2 plots
 library(patchwork)
-
-=======
-library(pacman)
-
-pacman::p_load(
-  here,         # Handles relative file paths in a project-agnostic way
-  tidyverse,    # Core packages for data manipulation and visualization (ggplot2)
-  RColorBrewer, # Color palettes
-  scales,       # Enhanced ggplot2 with control over axis breaks, labels, and formatting
-  cowplot,      # For combining plots and themes (used for figure layout)
-  patchwork     # For combining multiple ggplot2 plots
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
-
 
 # ---- 0.2 Read in data ----
 

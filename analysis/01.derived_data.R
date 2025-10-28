@@ -15,7 +15,6 @@
 
 # ---- 0. Load R libraries -----------------------------------------------------
 
-<<<<<<< HEAD
 # Handles relative file paths
 library(here)
 
@@ -33,19 +32,6 @@ library(ISOweek)
 
 # Spatial data handling for mapping
 library(sf)
-
-=======
-library(pacman)
-
-pacman::p_load(
-  here,       # Handles relative file paths
-  knitr,      # R Markdown report generation
-  tidyverse,  # Data manipulation and ggplot2 graphics
-  lubridate,  # Simplifies working with dates and times
-  ISOweek,    # Converts ISO weeks to calendar dates
-  sf          # Spatial data handling for mapping
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
 
 # ---- 1. DATA PROCESSING ------------------------------------------------------
 

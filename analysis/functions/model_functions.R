@@ -16,7 +16,6 @@
 
 # ---- 0.1 Read in R libraries ----
 
-<<<<<<< HEAD
 # Simplifies the use of relative file paths
 library(here)
 
@@ -34,17 +33,6 @@ library(sf)
 
 # R interface to CmdStan, a backend for fitting Stan models
 library(cmdstanr)
-
-=======
-library(pacman)
-pacman::p_load(INLA,
-               tidyverse, sf, lubridate,here)
-
-pacman::p_load(
-  here,        # Simplifies the use of relative file paths
-  tidyverse    # Core packages for data manipulation and visualization
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
 
 # ---- 1. Difference in WAIC ---------------------------------------------------
 

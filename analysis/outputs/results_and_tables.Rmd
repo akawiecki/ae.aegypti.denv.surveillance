@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Load libraries
 ```{r load libraries, message=FALSE, warning=FALSE}
-<<<<<<< HEAD
 
 # Handles relative file paths
 library(here)
@@ -29,13 +28,6 @@ library(sf)
 
 # Core tidyverse packages for data manipulation and visualization
 library(tidyverse)
-=======
-library("here")
-library("gt")
-library("lubridate")
-library("sf")
-library("tidyverse")
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
 ```
 
 ### Read in data 

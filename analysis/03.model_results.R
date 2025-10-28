@@ -18,7 +18,6 @@
 
 # ---- 0.1 Read in R libraries ----
 
-<<<<<<< HEAD
 # Simplifies the use of relative file paths
 library(here)
 
@@ -48,22 +47,6 @@ library(cmdstanr)
 
 # Tools and examples for Bayesian data analysis (from McElreath)
 library(rethinking)
-=======
-library(pacman)
-pacman::p_load(
-  here,         # Manage relative file paths
-  tidyverse,    # Data wrangling and visualization
-  psych,        # Descriptive stats and psychometrics
-  MASS,         # Statistical functions and distributions
-  INLA,         # Bayesian inference using INLA
-  inlabru,      # Interface for INLA models
-  rstan,        # R interface to Stan
-  loo,          # Model comparison via LOO/WAIC
-  sf,           # Spatial data handling
-  cmdstanr,     # R interface to CmdStan
-  rethinking    # Tools for Bayesian analysis (McElreath)
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
 
 # ---- 0.2 Read in functions ----
 

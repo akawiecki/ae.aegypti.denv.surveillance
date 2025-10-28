@@ -16,7 +16,7 @@
 # ---- 0. Load -----------------------------------------------------------------
 
 # ---- 0.1 Read in R libraries ----
-<<<<<<< HEAD
+
 # Handles relative file paths in a project-agnostic way
 library(here)
 
@@ -34,19 +34,6 @@ library(cowplot)
 
 # For combining multiple ggplot2 plots
 library(patchwork)
-
-=======
-
-library(pacman)
-pacman::p_load(
-  here,         # Relative filepaths
-  tidyverse,    # Data management + ggplot2 graphics
-  RColorBrewer, # Color palettes from colorbrewer2.org
-  scales,       # Overrides ggplots default breaks, labels, palettes
-  cowplot,      # Combine multiple plots
-  patchwork     # Combine multiple plots
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
 
 # ---- 0.2 Color schemes ----
 

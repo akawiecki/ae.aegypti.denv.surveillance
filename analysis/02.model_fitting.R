@@ -38,7 +38,6 @@
 
 # ---- 0.2 Read in libraries ----
 
-<<<<<<< HEAD
 # Simplifies the use of relative file paths
 library(here)
 
@@ -68,24 +67,6 @@ library(cmdstanr)
 
 # Tools and examples for Bayesian data analysis (from McElreath)
 library(rethinking)
-=======
-# Load required libraries using pacman for efficient package management
-library(pacman)
-
-pacman::p_load(
-  here,        # Simplifies the use of relative file paths
-  tidyverse,   # Core packages for data manipulation and visualization
-  psych,       # Functions for descriptive statistics and psychometrics
-  MASS,        # Functions for statistical methods and distribution fitting
-  INLA,        # Integrated Nested Laplace Approximation for Bayesian inference
-  rstan,       # R interface to Stan for Bayesian modeling
-  loo,         # Efficient leave-one-out cross-validation for Bayesian models
-  sf,          # Simple features for handling spatial vector data
-  cmdstanr,    # R interface to CmdStan, a backend for fitting Stan models
-  rethinking   # Tools and examples for Bayesian data analysis (from McElreath)
-)
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
-
 
 # ---- 1. Data for model fitting -----------------------------------------------
 
@@ -108,6 +89,9 @@ m.area.week.lag <- readRDS(here("analysis", "data", "derived_data",
                                 "area_level_data","m.area.week.lag.rds"))
 m.area.week.lag.4 <- readRDS(here("analysis", "data", "derived_data",
                                   "area_level_data","m.area.week.lag.4.rds"))
+
+m.area.week.lag.4.old <- readRDS(here("analysis", "data", "derived_data",
+                                  "area_level_data","m.area.week.lag.4.old.rds"))
 
 h.area.week.lag <- readRDS(here("analysis", "data", "derived_data",
                                 "area_level_data","h.area.week.lag.rds"))
