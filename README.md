@@ -160,12 +160,12 @@ To recreate the environment used for this analysis:
    ```r
    install.packages("renv")
    renv::restore()
-```
+   ```
 
 This project uses two packages not available on CRAN:
 
-- **`INLA` version `24.05.10`**
-- **`cmdstanr` version `0.7.1`**
+- `INLA` version `24.05.10`
+- `cmdstanr` version `0.7.1`
 
 These packages may not be restored automatically via `renv::restore()` due to 
 their non-standard installation sources. Please install them manually.
