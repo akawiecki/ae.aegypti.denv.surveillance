@@ -17,7 +17,7 @@ This repository contains the data and code for our paper:
 The [:file_folder: analysis](/analysis) directory contains the scripts and outputs 
 of the study analysis:
 
-**`01.derived_data.R`**: `R` script to load and process data needed to perform 
+* **`01.derived_data.R`**: `R` script to load and process data needed to perform 
 the analysis and model fitting. This script calls datasets that are only available
 upon request from the [:file_folder: raw_data](/analysis/data/raw_data) (this folder is
 empty in this repository).
@@ -26,109 +26,109 @@ only available upon request, and at the city area-level, which are available in
 [:file_folder: area_level_data](/analysis/data/derived_data/area_level_data).
 
  
-**`02.model_fitting.R`**: `R` script to fit models using R-INLA and STAN at the \
+* **`02.model_fitting.R`**: `R` script to fit models using R-INLA and STAN at the \
 hosuehold and city area levels:
 
-  * *Ae. aegypti* surveillance using a case-contact sampling strategy vs. 
+    * *Ae. aegypti* surveillance using a case-contact sampling strategy vs. 
 broader surveillance (household-level models):
-    * Association between surveillance strategy and *Ae. aegypti* abundance.
-    * Association between surveillance strategy and probability
+      * Association between surveillance strategy and *Ae. aegypti* abundance.
+      * Association between surveillance strategy and probability
       of DENV detection in *Ae. aegypti*.
-  * Association between *Ae. aegypti* abundance and probability of DENV detection
+    * Association between *Ae. aegypti* abundance and probability of DENV detection
      (household-level models and area-level models).
-  * Association between entomological metrics and DENV incidence in humans
+    * Association between entomological metrics and DENV incidence in humans
      (area-level models).
  
-**`03.model_results.R`**: `R` script to extract model outputs: 
+* **`03.model_results.R`**: `R` script to extract model outputs: 
 estimated effect sizes and Watanabe-Akaike information criterion (WAIC) to measure 
 goodness of fit. 
 
-**`04.model_prior sensitivity.R`**: `R` script to perform prior sensitivity analysis
+* **`04.model_prior sensitivity.R`**: `R` script to perform prior sensitivity analysis
 for Dirichlet-weighted 4-week lags area-level models in developed in STAN. 
 
-[:file_folder: data](/analysis/data): Data used in the analysis.
-
-- [:file_folder: raw_data](/analysis/data/raw_data): The datasets used in 
-this project are not publicly available but can be shared upon request but were
-originally stored in this subfolder. These datasets are called in the analysis code. 
-The original data sets were: 
-  * `ae.mid.rds`: Individual mosquito PCR data, including mosquito ID,
-  household ID, date of collection, result of DENV PCR testing. 
-  * `m.ae.pcr.rds`: Household entomological surveillance data, including
-  household ID, mosquitoes collected, result of DENV PCR testing. 
-  * `h.pcr.rds`: Human participant PCR data, including participant ID,
-  household ID, result of DENV PCR testing.
-  * `sf.moh.rds`: Iquitos Ministry of Health (MoH) polygons.
-
-- [:file_folder: derived_data](/analysis/data/derived_data): This folder contains
-processed datasets derived from the original datasets for analysis. 
-Data aggregated by area of the city, is available in the sub-folder 
-[:file_folder: area_level_data](/analysis/data/derived_data/area_level_data). 
-Household-level data is available upon request and was originally stored in  [:file_folder:household_level_data](/analysis/data/derived_data/household_level_data) 
-(this folder is empty in this repository).
-
-The household-level data sets that are available upon request are: 
-
-  * `d.m.rds`: Entomological surveillance household-level data for modelling with 
-  numeric and factor IDs for relevant variables (required for some for certain
-  formula structures in R-INLA).
-  
-  * `h.surv.rds`: Human participant PCR data
-  
-  * `h.surv.area.rds`: Human surveillance data assigned to city aggregation areas
-  * `m.surv.rds`: Household entomological surveillance data with epiweeks and 
-  surveillance categories
-  
-  * `m.surv.area.rds`: Household entomological surveillance data assigned to 
-  city aggregation areas
-  
-  * `m.ae.mid.pcr.rds`: Mosquito surveillance merged with individual mosquito 
-  PCR results
-  
-  * `m.h.surv.rds`: Combined human and mosquito PCR testing and surveillance 
-  data with harmonized variables
-  
-  * `sf.city.poly.rds`: a polygon geometry representing the full extent 
-  of the city of Iquitos (serves as the boundary for mesh construction for
-  spatial analysis using INLA).
-
-
-[:file_folder: functions](/analysis/functions): 
+* [:file_folder: functions](/analysis/functions): 
 This folder contains:
 
-  - **`model_functions.R`**: an `R` script with functions used to extract 
+    * **`model_functions.R`**: an `R` script with functions used to extract 
 goodness-of-fit metrics and parameter estimates from fitted INLA and STAN models.
-  - Pre-compiled function objects saved as `.rds` files for quick loading and reuse.
+    * Pre-compiled function objects saved as `.rds` files for quick loading and reuse.
 
-[:file_folder: outputs](/analysis/outputs): 
+* [:file_folder: outputs](/analysis/outputs): 
 This folder contains:
 
-  - **`figures.R`**: an `R` script that generates the figures included in the paper
+    * **`figures.R`**: an `R` script that generates the figures included in the paper
   that are stored as `.jpg` files in [:file_folder: figures](/analysis/outputs/figures)
 
-  - [:file_folder: figures](/analysis/outputs/figures): Stores `.jpg` files of 
+    * [:file_folder: figures](/analysis/outputs/figures): Stores `.jpg` files of 
   paper figures. 
   
   
-  - [:file_folder: models](/analysis/outputs/models): Contains all fitted models
+    * [:file_folder: models](/analysis/outputs/models): Contains all fitted models
   and extracted model outputs produced in **`02.model_fitting.R`**,
   **`03.model_results.R`** and **`04.model_prior_sensitivity_analysis.R`** 
   as `.rds` files
   
-  - **`results_and_tables.Rmd`** and **`results_and_tables.pdf`**: Contains the 
+    * **`results_and_tables.Rmd`** and **`results_and_tables.pdf`**: Contains the 
   code and output for generating the study's results and tables. Due to the use 
   of household-level data (available only upon request), the `.Rmd` file is 
   provided to demonstrate the code structure and analysis workflow, even without
   direct access to the datasets.
   
-  - [:file_folder: tables](/analysis/outputs/tables): Contains tables produced
+    * [:file_folder: tables](/analysis/outputs/tables): Contains tables produced
     in **`results_and_tables.Rmd`** as `.csv` files.
 
-[:file_folder:supplementary-materials](/analysis/supplementary-materials):
+* [:file_folder:supplementary-materials](/analysis/supplementary-materials):
 Contains supplementary materials included in the paper:
 
- - **`supplementary_figures.R`**: `R` script used to generate the supplementary figures.
- - Corresponding output figures saved as `.jpg` files.
+  * **`supplementary_figures.R`**: `R` script used to generate the supplementary figures.
+  * Corresponding output figures saved as `.jpg` files.
+ 
+* [:file_folder: data](/analysis/data): Data used in the analysis.
+
+  * [:file_folder: raw_data](/analysis/data/raw_data): The datasets used in 
+this project are not publicly available but can be shared upon request but were
+originally stored in this subfolder. These datasets are called in the analysis code. 
+The original data sets were: 
+    * `ae.mid.rds`: Individual mosquito PCR data, including mosquito ID,
+  household ID, date of collection, result of DENV PCR testing. 
+    * `m.ae.pcr.rds`: Household entomological surveillance data, including
+  household ID, mosquitoes collected, result of DENV PCR testing. 
+    * `h.pcr.rds`: Human participant PCR data, including participant ID,
+  household ID, result of DENV PCR testing.
+    * `sf.moh.rds`: Iquitos Ministry of Health (MoH) polygons.
+
+  * [:file_folder: derived_data](/analysis/data/derived_data): This folder contains
+processed datasets derived from the original datasets for analysis. 
+Data aggregated by area of the city, is available in the sub-folder 
+[:file_folder: area_level_data](/analysis/data/derived_data/area_level_data). 
+Household-level data is available upon request and was originally stored in a 
+folder named `household_level_data`
+(this folder is not in this repository). The household-level data sets that are 
+available upon request are: 
+
+    * `d.m.rds`: Entomological surveillance household-level data for modelling with 
+  numeric and factor IDs for relevant variables (required for some for certain
+  formula structures in R-INLA).
+  
+    * `h.surv.rds`: Human participant PCR data
+  
+    * `h.surv.area.rds`: Human surveillance data assigned to city aggregation areas
+    * `m.surv.rds`: Household entomological surveillance data with epiweeks and 
+  surveillance categories
+  
+    * `m.surv.area.rds`: Household entomological surveillance data assigned to 
+  city aggregation areas
+  
+    * `m.ae.mid.pcr.rds`: Mosquito surveillance merged with individual mosquito 
+  PCR results
+  
+    * `m.h.surv.rds`: Combined human and mosquito PCR testing and surveillance 
+  data with harmonized variables
+  
+    * `sf.city.poly.rds`: a polygon geometry representing the full extent 
+  of the city of Iquitos (serves as the boundary for mesh construction for
+  spatial analysis using INLA).
+
 
 ## How to run in your browser or download and run locally
 
