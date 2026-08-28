@@ -415,6 +415,26 @@ plot(sf.city.poly)
 saveRDS(sf.city.poly, here("analysis", "data", "derived_data","household_level_data",
                            "sf.city.poly.rds"))
 
+
+# h.denominator.pcr.gis <- readRDS(here("analysis", "data", "raw_data",
+#                                       "h.denominator.pcr.gis.rds"))
+# 
+# h.surv <- readRDS(here("analysis", "data", "derived_data",
+#                        "household_level_data", "h.surv.rds"))
+# library(sf)
+# h.loc_zone <- h.denominator.pcr.gis[c("location_code", "zone")] |> 
+#   st_drop_geometry() |> 
+#   distinct()
+# 
+# 
+# 
+# h.surv.2 <- h.surv |> 
+#   left_join(h.loc_zone, by = "location_code")
+# 
+# saveRDS(h.surv.2, here("analysis", "data", "derived_data","household_level_data",
+#                            "h.surv.rds"))
+
+
 # ---- 3. DATA FOR AREA-LEVEL MODELS ---------------------------------------
 
 # To enable spatio-temporal modelling, test results were grouped into three large,
@@ -722,3 +742,299 @@ saveRDS(h.area.week.lag.4,
         here("analysis", "data", "derived_data","area_level_data",
                                 "h.area.week.lag.4.rds"))
 
+
+# ---- 4. DATA FOR SAMPLING SENSITIVITY ANALYSIS ---------------------------------------
+
+# Sensitivity analysis: apply the same household-selection criteria to the 
+# entire study period (i.e, the selection criteria used to restrict mosquito 
+# testing in February–March to zones with concurrent human surveillance) for both 
+# mosquito and human surveillance data. This yields a fully consistent, 
+# uniformly-sampled subset across all weeks. 
+
+# Read in processed data
+m.h.surv <- readRDS(here("analysis", "data", "derived_data","household_level_data",
+                         "m.h.surv.rds"))
+
+# Apply the same stringent selection criteria that were applied to select households
+# for mosquito DENV testing in February and March 2011 to both mosquito and 
+# human surveillance across the entire study period. 
+
+m.h.surv.sen <- m.h.surv |>
+  filter((str_detect(location_code, "MY")==TRUE) |
+           (str_detect(location_code, "PU")==TRUE)|
+           (str_detect(location_code, "SC")==TRUE)|
+           (str_detect(location_code, "^TA")==TRUE)) 
+
+# Save as .rds file
+saveRDS(m.h.surv.sen, here("analysis", "data", "derived_data", "household_level_data",
+                     "m.h.surv.sen.rds"))
+
+# ---- 4.1 Process entomological data for modelling at area-level   ----
+
+# ---- 4.1.1 Assign entomological observations to aggregation areas   ----
+
+m.surv.area.sen <- m.h.surv.sen %>%
+  filter(host == "mosquito") %>%
+  # Household had some DENV PCR-positive female Ae. aegypti in epiweek
+  mutate(denv = case_when(
+    n.denv > 0 ~ "positive",
+    T~ "negative"
+  )) %>%
+  # Aggregate observations into areas with consistent surveillance
+  mutate(area= case_when(
+    moh %in% c("29","32","33","34",
+               "22","23","24" ,"25","26","27","28","30","31") ~ "san.juan",
+    moh %in% c("4","11","6","9","12","13","10","8","7","3","5","2","1") ~ "punchana",
+    moh %in% c("17","14","19","18","20","21",
+               "16","15") ~ "iquitos"
+  ))
+
+# Save as .rds file
+saveRDS(m.surv.area.sen, here("analysis", "data", "derived_data","household_level_data",
+                              "m.surv.area.sen.rds"))
+
+# ---- 4.1.2 Summarise entomological observations by aggregation area   ----
+
+# Entomological surveillance observations summarized by area
+m.area.sen <- m.surv.area.sen %>%
+  # Remove the geometry column
+  st_drop_geometry() %>%
+  # Group by area and date
+  group_by(area, year, epiweek, date.surv) %>%
+  # Summarize mosquito data per area
+  summarize(
+    n.surveys = n(),                        # Count number of mosquito collection surveys
+    n.ind = sum(n.ind, na.rm = TRUE),       # Total number of female Ae. aegypti collected per epiweek/area
+    n.tested = sum(n.tested, na.rm = TRUE), # Total number of female Ae. aegypti tested by PCR per epiweek/area
+    n.denv = sum(n.denv, na.rm = TRUE)      # Total number of DENV PCR-positive female Ae. aegypti per epiweek/area
+  ) %>%
+  ungroup() %>%
+  # Wrangle NAs and 0s
+  mutate(
+    # If no mosquitoes were tested in a area, convert 0s to NA (so 0 tested is not confused with 0 positives)
+    n.tested = na_if(n.tested, 0),
+    n.denv = case_when(
+      # If no mosquitoes were tested, the number of DENV PCR-positive female Ae. aegypti per epiweek/area should be NA
+      is.na(n.tested) ~ NA,
+      # Otherwise, keep the value
+      TRUE ~ n.denv
+    )
+  ) %>%
+  # Calculate derived metrics:
+  mutate(
+    prevalence = n.denv / n.tested,     # Proportion of tested female Ae. aegypti that were DENV positive
+    avg.aa.f = n.ind / n.surveys        # Average number of individuals per mosquito collection survey
+  ) %>%
+  # Convert prevalence to percentage scale
+  mutate(
+    prevalence.by.pop = prevalence * 100
+  ) %>%
+  # Group again by area to prepare for further aggregation
+  group_by(area) %>%
+  # Count how many epiweeks of data are present per area
+  mutate(n.epiweeks = n())
+# Save as .rds file
+saveRDS(m.area.sen, here("analysis", "data", "derived_data","area_level_data",
+                         "m.area.sen.rds"))
+# ---- 4.1.3 Generate weekly lagged mosquito metrics by area   ----
+# Here we don't use functions like `dplyr::lag()` given that the time series
+# is not contiguous.
+# Create lagged covariates of average adult female mosquito abundance (avg.aa.f)
+# to assess associations with dengue prevalence at various prior time points.
+m.area.week.lag.sen <- m.area.sen %>%
+  # Join with itself to align each surveillance record (date.surv.x)
+  # with previous avg.aa.f values (from date.surv.y) in the same area.
+  left_join(m.area.sen[, c("area", "date.surv", "avg.aa.f")], by = "area", relationship = "many-to-many") %>%
+  # Compute time lag in weeks between the current record and the lagged observation
+  mutate(week_lag = as.numeric((date.surv.x - date.surv.y) / 7)) %>%
+  # Sort by area and lag time for consistent structure
+  arrange(area, week_lag) %>%
+  # Retain only lags from the past or same week (i.e., exclude future values)
+  filter(week_lag >= 0) %>%
+  # Drop the lagged date column (no longer needed after calculating lag)
+  dplyr::select(-c("date.surv.y")) %>%
+  # Reshape to wide format: one column per lagged week of avg.aa.f (e.g., week_lag_0, week_lag_1, ...)
+  pivot_wider(
+    names_from = week_lag,
+    values_from = avg.aa.f.y,
+    names_prefix = "week_lag_"
+  ) %>%
+  # Rename original columns for clarity
+  rename(
+    date.surv = date.surv.x,
+    avg.aa.f  = avg.aa.f.x
+  ) %>%
+  # Keep only records with non-missing dengue prevalence
+  filter(!is.na(prevalence))
+# Save as an RDS file
+saveRDS(m.area.week.lag.sen, here("analysis", "data", "derived_data", "area_level_data",
+                                  "m.area.week.lag.sen.rds"))
+# Select only weekly lags 0-4.
+m.area.week.lag.4.sen <- m.area.week.lag.sen %>%
+  filter(!is.na(week_lag_1) & !is.na(week_lag_2) & !is.na(week_lag_3)& !is.na(week_lag_4))
+# Save as an RDS file
+saveRDS(m.area.week.lag.4.sen, here("analysis", "data", "derived_data","area_level_data",
+                                    "m.area.week.lag.4.sen.rds"))
+# ---- 4.2 Process human surveillance data for modelling at area-level   ----
+# ---- 4.2.1 Assign human surveillance observations to aggregation areas   ----
+# Here we assign entomological and human surveillance observations to aggregation areas:
+h.surv.area.sen <- m.h.surv.sen %>%
+  mutate(area= case_when(
+    moh %in% c("29","32","33","34",
+               "22","23","24" ,"25","26","27","28","30","31") ~ "san.juan",
+    moh %in% c("4","11","6","9","12","13","10","8","7","3","5","2","1") ~ "punchana",
+    moh %in% c("17","14","19","18","20","21",
+               "16","15") ~ "iquitos"
+  ))
+# Save as an RDS file
+saveRDS(h.surv.area.sen,  here("analysis", "data", "derived_data","household_level_data",
+                               "h.surv.area.sen.rds"))
+# ---- 4.2.2 Summarise human surveillance observations by aggregation area ----
+# Human surveillance observations summarized by area
+h.area.sen <- h.surv.area.sen %>%
+  # Remove the geometry column
+  st_drop_geometry() %>%
+  # Group by area and date
+  group_by(area, epiweek, date.surv, host) %>%
+  # Summarize human and entomological data per area
+  summarize(
+    n.surveys= n(),  # Count number of surveys
+    # Total number of individuals per epiweek/area
+    n.ind= sum(n.ind, na.rm= TRUE),
+    # Total number of individuals tested by PCR per epiweek/area
+    n.tested= sum(n.tested, na.rm= TRUE),
+    # Total number of DENV PCR-positive individuals per epiweek/area
+    n.denv= sum(n.denv, na.rm= TRUE)
+  ) %>%
+  ungroup() %>%
+  # Wrangle NAs and 0s
+  mutate(
+    # If no individuals were tested in a area, convert 0s to NA
+    n.tested= na_if(n.tested,0),
+    # If no individuals were tested, the number of DENV PCR-positive individuals
+    # per epiweek/area should be NA
+    n.denv= case_when(
+      is.na(n.tested) ~ NA,
+      T~ n.denv)) %>%
+  # Calculate derived metrics:
+  mutate(prevalence= case_when(
+    # Proportion of tested female Ae. aegypti that were DENV positive
+    host=="mosquito"~ n.denv/n.tested,
+    # Proportion of tested human participants that were DENV positive
+    host=="human"~ n.denv/n.ind)
+  ) %>%
+  # Convert human incidence to infected individuals per 1000 individuals under surveillance
+  mutate(incidence.p.1000= case_when(
+    host=="human"~ prevalence*1000,
+    T ~ NA
+  )) %>%
+  # Convert mosquito DENV prevalence to percentage scale
+  mutate(prevalence.p.100= case_when(
+    host=="mosquito"~ prevalence*100,
+    T ~ NA
+  )) %>%
+  # Average number of mosquitoes per mosquito collection survey
+  mutate(avg.aa.f= case_when(
+    host=="mosquito"~  n.ind/n.surveys,
+    host=="human"~ NA
+  )) %>%
+  # Calculate vector index
+  mutate(vi= case_when(
+    host=="mosquito"~  avg.aa.f*prevalence*100,
+    host=="human"~ NA))
+# Save as an RDS file:
+saveRDS(h.area.sen,  here("analysis", "data", "derived_data", "area_level_data",
+                          "h.area.sen.rds"))
+# ---- 4.2.2 Generate weekly lagged mosquito metrics and human DENV incidence ----
+# Subset data to include only rows where the host is human
+h.area.h.sen <- h.area.sen %>%
+  filter(host == "human")
+# Subset data to include only rows where the host is mosquito
+h.area.m.sen <- h.area.sen %>%
+  filter(host == "mosquito")
+# Join datasets to calculate weekly lagged mosquito metrics vs. human DENV incidence
+h.area.week.lag.sen <- h.area.h.sen %>%
+  # Join with mosquito prevalence data by area
+  left_join(h.area.m.sen[, c("area", "date.surv", "prevalence.p.100")], by = "area",
+            relationship = "many-to-many") %>%
+  # Calculate the week lag between human and mosquito data
+  mutate(week_lag = as.numeric((date.surv.x - date.surv.y) / 7)) %>%
+  # Arrange data by area and week lag
+  arrange(area, week_lag) %>%
+  # Retain only lags from the past or same week (i.e., exclude future values)
+  filter(week_lag >= 0) %>%
+  # Remove redundant date column
+  dplyr::select(-c("date.surv.y")) %>%
+  # Reshape data: create separate columns for each week's lagged prevalence
+  pivot_wider(names_from = week_lag, values_from = prevalence.p.100.y,
+              names_prefix = "prev.week_lag_") %>%
+  # Rename columns for consistency
+  rename(date.surv = date.surv.x,
+         prevalence.p.100 = prevalence.p.100.x) %>%
+  # Remove rows with missing human prevalence values
+  filter(!is.na(prevalence)) %>%
+  # Join with average number of adult female Ae. aegypti (avg.aa.f) by area
+  left_join(h.area.m.sen[, c("area", "date.surv", "avg.aa.f")], by = "area",
+            relationship = "many-to-many") %>%
+  # Calculate week lag again for avg.aa.f variable
+  mutate(week_lag = as.numeric((date.surv.x - date.surv.y) / 7)) %>%
+  # Arrange by area and lag
+  arrange(area, week_lag) %>%
+  # Retain only lags from the past or same week (i.e., exclude future values)
+  filter(week_lag >= 0) %>%
+  # Drop extra date column
+  dplyr::select(-c("date.surv.y")) %>%
+  # Pivot wider for avg.aa.f at different lags
+  pivot_wider(names_from = week_lag, values_from = avg.aa.f.y,
+              names_prefix = "avg.aa.f.week_lag_") %>%
+  # Rename the date column
+  rename(date.surv = date.surv.x) %>%
+  # Join with vector index (vi) data by area
+  left_join(h.area.m.sen[, c("area", "date.surv", "vi")], by = "area",
+            relationship = "many-to-many") %>%
+  # Compute lag between human and mosquito vi data
+  mutate(week_lag = as.numeric((date.surv.x - date.surv.y) / 7)) %>%
+  # Arrange by area and lag
+  arrange(area, week_lag) %>%
+  # Retain only lags from the past or same week (i.e., exclude future values)
+  filter(week_lag >= 0) %>%
+  # Remove extra date column
+  dplyr::select(-c("date.surv.y")) %>%
+  # Pivot wider for virus index at different lags
+  pivot_wider(names_from = week_lag, values_from = vi.y, names_prefix = "vi.week_lag_") %>%
+  # Rename date column again for consistency
+  rename(date.surv = date.surv.x) %>%
+  # Remove rows with missing human prevalence
+  filter(!is.na(prevalence)) %>%
+  # Drop unneeded columns including original mosquito variables and high-lag values
+  dplyr::select(-c(
+    "avg.aa.f.x", "vi.x",
+    "prev.week_lag_7", "prev.week_lag_8", "prev.week_lag_9",
+    "prev.week_lag_10", "prev.week_lag_11", "prev.week_lag_12",
+    "prev.week_lag_13", "prev.week_lag_14", "prev.week_lag_15",
+    "prev.week_lag_16", "prev.week_lag_17",
+    "avg.aa.f.week_lag_7", "avg.aa.f.week_lag_8", "avg.aa.f.week_lag_9",
+    "avg.aa.f.week_lag_10", "avg.aa.f.week_lag_11", "avg.aa.f.week_lag_12",
+    "avg.aa.f.week_lag_13", "avg.aa.f.week_lag_14", "avg.aa.f.week_lag_15",
+    "avg.aa.f.week_lag_16", "avg.aa.f.week_lag_17",
+    "vi.week_lag_7", "vi.week_lag_8", "vi.week_lag_9",
+    "vi.week_lag_10", "vi.week_lag_11", "vi.week_lag_12",
+    "vi.week_lag_13", "vi.week_lag_14", "vi.week_lag_15",
+    "vi.week_lag_16", "vi.week_lag_17"))
+# Save as an RDS file
+saveRDS(h.area.week.lag.sen,  here("analysis", "data", "derived_data","area_level_data",
+                                   "h.area.week.lag.sen.rds"))
+# Select only weekly lags 0-4.
+h.area.week.lag.4.sen <- h.area.week.lag.sen %>%
+  # Select only weekly lags 0-4
+  filter(!is.na(prev.week_lag_0) &
+           !is.na(prev.week_lag_1) &
+           !is.na(prev.week_lag_2) &
+           !is.na(prev.week_lag_3) &
+           !is.na(prev.week_lag_4)) %>%
+  # Remove the San Juan area
+  filter(area!="san.juan")
+# Save as an RDS file:
+saveRDS(h.area.week.lag.4.sen,
+        here("analysis", "data", "derived_data","area_level_data",
+             "h.area.week.lag.4.sen.rds"))

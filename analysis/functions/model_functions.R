@@ -34,103 +34,7 @@ library(sf)
 # R interface to CmdStan, a backend for fitting Stan models
 library(cmdstanr)
 
-# ---- 1. Difference in WAIC ---------------------------------------------------
-
-# fx.waic
-# This function computes the WAIC (Watanabe-Akaike Information Criterion)
-# for a list of INLA models and returns a data frame containing:
-# - Fixed and random effects used in each model
-# - WAIC values with standard error and confidence intervals
-# - Differences in WAIC compared to the best (lowest WAIC) model
-# - Predictive penalties
-#
-# Output: Data frame with WAIC statistics for model comparison
-
-fx.waic <- function(m) {
-  # f.waic.min
-  # Helper function to identify the model with the lowest WAIC
-  # Input: List of INLA models
-  # Output: Model with minimum WAIC value
-  f.waic.min <- function(m) {
-
-    # Extract the WAIC value from each model
-    min.waic <- min(unlist(lapply(1:length(m), function(x) {
-      m[[x]][["waic"]][["waic"]]
-    })))
-
-    # Identify which model(s) have the minimum WAIC
-    min.waic.T <- sapply(1:length(m),
-                         function(x) m[[x]][["waic"]][["waic"]] == min.waic)
-
-    # Return the model(s) with the minimum WAIC
-    m.min.waic <- m[min.waic.T == TRUE]
-  }
-
-  # Apply helper function to find the best model
-  m.min.waic <- f.waic.min(m)
-
-  # f.waic.compare
-  # Helper function to extract and calculate WAIC metrics for one model
-  # Input: An index from a list of INLA models.
-  # Output: A data frame of metrics for each model compared to the lowest WAIC
-  f.waic.compare <- function(x) {
-    # Number of observations
-    n <- length(m[[x]][["waic"]][["local.waic"]])
-
-    waic.compare <- list(
-
-      # Fixed effects
-      fixed = c(paste(m[[x]][["names.fixed"]], collapse = "+")),
-      # Fixed effects without the intercept
-      fixed.s = m[[x]][["fixed.effect.s"]],
-      # Random effects
-      random = c(paste(m[[x]][["model.random"]], collapse = "+")),
-      # WAIC value
-      waic = m[[x]][["waic"]][["waic"]],
-      # Standard error of the point-wise WAIC
-      s.e = as.numeric(sqrt(n * var(m[[x]][["waic"]][["local.waic"]],
-                                    na.rm = TRUE))),
-      # Lower CI of the point-wise WAIC
-      ci.l = m[[x]][["waic"]][["waic"]] - as.numeric(
-        sqrt(n * var(m[[x]][["waic"]][["local.waic"]],na.rm = TRUE))) * 2.6,
-      # Upper CI of the point-wise WAIC
-      ci.u = m[[x]][["waic"]][["waic"]] + as.numeric(
-        sqrt(n * var(m[[x]][["waic"]][["local.waic"]], na.rm = TRUE))) * 2.6,
-      # Difference between each model's WAIC and the lowest WAIC
-      d.mean.waic = m[[x]][["waic"]][["waic"]] -
-        m.min.waic[[1]][["waic"]][["waic"]],
-      # Standard error of the difference in WAIC
-      d.s.e = as.numeric(
-        sqrt(n * var(m[[x]][["waic"]][["local.waic"]] -
-                       m.min.waic[[1]][["waic"]][["local.waic"]],
-                                      na.rm = TRUE))),
-      # Lower CI of the difference in WAIC
-      ci.d.l = m[[x]][["waic"]][["waic"]] -
-        m.min.waic[[1]][["waic"]][["waic"]] -
-        as.numeric(sqrt(n * var(m[[x]][["waic"]][["local.waic"]] -
-                                  m.min.waic[[1]][["waic"]][["local.waic"]],
-                                na.rm = TRUE))) * 2.6,
-      # Upper CI of the difference in WAIC
-      ci.d.u = m[[x]][["waic"]][["waic"]] -
-        m.min.waic[[1]][["waic"]][["waic"]] +
-        as.numeric(sqrt(n * var(m[[x]][["waic"]][["local.waic"]] -
-                                  m.min.waic[[1]][["waic"]][["local.waic"]],
-                                na.rm = TRUE))) * 2.6,
-      # Prediction penalty
-      p.waic = sum(m[[x]][["waic"]][["local.p.eff"]], na.rm = TRUE),
-      # Model ID: index of the model
-      m = paste("m", x, sep = ".")
-    )
-  }
-
-  df.model <- lapply(1:length(m), f.waic.compare) %>%
-    bind_rows() %>%
-    arrange(waic)
-}
-
-saveRDS(fx.waic, here("analysis", "data", "derived_data", "fx.waic.rds"))
-
-# ---- 2. Extract fixed effects from models fitted with R-INLA -----------------
+# ---- 1. Extract fixed effects from models fitted with R-INLA -----------------
 
 # fx.fix.eff
 # This function extracts and formats the fixed effect estimates from a list
@@ -170,9 +74,9 @@ fx.fix.eff <- function(m) {
 }
 
 # Save the resulting function to an RDS file for later use in the analysis pipeline.
-saveRDS(fx.fix.eff, here("analysis", "data", "derived_data",  "fx.fix.eff.rds"))
+saveRDS(fx.fix.eff, here("analysis",  "functions",  "fx.fix.eff.rds"))
 
-# ---- 3.Extract fixed effects from models fitted with STAN --------------------
+# ---- 2.Extract fixed effects from models fitted with STAN --------------------
 
 # fx.stan.f.e
 # This function extracts and exponentiates the fixed effect estimates from a
@@ -185,47 +89,181 @@ saveRDS(fx.fix.eff, here("analysis", "data", "derived_data",  "fx.fix.eff.rds"))
 #     model specifications (fixed and random effects), and model identifiers.
 
 fx.stan.f.e <- function(m) {
-  # Internal function to process a single STAN model object from the list
   f.fix.eff.exp <- function(x) {
-    as.data.frame(summary(m[[x]])) %>%
-      # Convert row names (parameter names) to a column for easier manipulation
-      rownames_to_column(var = "parameter") %>%
-      # Select relevant summary statistics for each parameter
-      dplyr::select(c(
-        "parameter",            # Name of the parameter
-        "summary.mean",         # Posterior mean
-        "summary.se_mean",      # Standard error of the mean
-        "summary.sd",           # Posterior standard deviation
-        "summary.2.5.",         # 2.5% posterior quantile
-        "summary.25.",          # 25% posterior quantile
-        "summary.50.",          # Median
-        "summary.97.5."         # 97.5% posterior quantile
-      )) %>%
-      # Filter to include only parameters of interest:
-      # - "alpha", "beta": fixed effect coefficients
-      # - "w[1]" to "w[5]": possible group-level or varying effect terms
-      # - "sigma": residual or observation-level standard deviation
-      filter(parameter %in% c("alpha", "beta", "w[1]", "w[2]",
-                              "w[3]", "w[4]", "w[5]", "sigma")) %>%
-      # Exponentiate the mean and selected quantiles
-      mutate(
-        mean.exp = exp(summary.mean),
-        sd.exp = exp(summary.sd),
-        q2.5.exp = exp(summary.2.5.),
-        q97.5.exp = exp(summary.97.5.)
+    m[[x]]$summary(
+      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
+      mean, sd,
+      ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
+      se_mean = ~sd(.x) / sqrt(length(.x))
+    ) %>%
+      rename(
+        parameter       = variable,
+        summary.mean    = mean,
+        summary.sd      = sd,
+        summary.2.5.    = `2.5%`,
+        summary.25.     = `25%`,
+        summary.50.     = `50%`,
+        summary.97.5.   = `97.5%`,
+        summary.se_mean = se_mean
       ) %>%
-      # Add model identifier and index
       mutate(
-        m = paste("m", x, sep = "."),
-        index = x
+        mean.exp  = exp(summary.mean),
+        sd.exp    = exp(summary.sd),
+        q2.5.exp  = exp(summary.2.5.),
+        q97.5.exp = exp(summary.97.5.),
+        m         = paste("m", x, sep = "."),
+        index     = x
       )
   }
-
-  # Apply the above extraction function to each model in the list and
-  # combine all results into a single data frame
-  lapply(1:length(m), f.fix.eff.exp) %>% bind_rows()
+  lapply(seq_along(m), f.fix.eff.exp) %>% bind_rows()
 }
 
 # Save the extraction function as an RDS file for reuse in the analysis pipeline
-saveRDS(fx.stan.f.e, here("analysis", "data", "derived_data", "fx.stan.f.e.rds"))
+saveRDS(fx.stan.f.e, here("analysis",  "functions", "fx.stan.f.e.rds"))
+
+# ---- 3.Extract fixed effects from models fitted with cmdstanr ----------------
+
+fx.cmdstanr.f.e <- function(m) {
+  f.fix.eff.exp <- function(x) {
+    m[[x]]$summary(
+      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
+      mean, sd,
+      ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
+      se_mean = ~sd(.x) / sqrt(length(.x))
+    ) %>%
+      rename(
+        parameter       = variable,
+        summary.mean    = mean,
+        summary.sd      = sd,
+        summary.2.5.    = `2.5%`,
+        summary.25.     = `25%`,
+        summary.50.     = `50%`,
+        summary.97.5.   = `97.5%`,
+        summary.se_mean = se_mean
+      ) %>%
+      mutate(
+        mean.exp  = exp(summary.mean),
+        sd.exp    = exp(summary.sd),
+        q2.5.exp  = exp(summary.2.5.),
+        q97.5.exp = exp(summary.97.5.),
+        m         = paste("m", x, sep = "."),
+        index     = x
+      )
+  }
+  lapply(seq_along(m), f.fix.eff.exp) %>% bind_rows()
+}
+
+# Save the extraction function as an RDS file for reuse in the analysis pipeline
+saveRDS(fx.cmdstanr.f.e, here("analysis",  "functions", "fx.cmdstanr.f.e.rds"))
+
+
+# ---- 4.Compare STAN models with WAIC and PSIS ----------------
+
+# fx.get.log.lik.matrix 
+# Purpose:  Extract the point‑wise log‑likelihood matrix from a fitted model,
+#           whether the model came from rstan (stanfit) or cmdstanr (CmdStanMCMC).
+# Returns:  A matrix (draws × observations) of log‑likelihood values.
+
+fx.get.log.lik.matrix <- function(fit) {
+  # rstan case
+  if (inherits(fit, "stanfit")) {             
+    # extract_log_lik pulls log_lik for each observation & each draw,
+    # merge_chains = TRUE combines all chains into one matrix.
+    loo::extract_log_lik(fit, merge_chains = TRUE)
+    
+    # cmdstanr case 
+  } else if (inherits(fit, "CmdStanMCMC")) {  
+    # draws() retrieves the specified variable; format = "matrix" gives
+    # a draws‑by‑observations matrix, same shape as the rstan output.
+    fit$draws("log_lik", format = "matrix")
+    
+    # unsupported type 
+  } else {
+    # Stop with a clear message so the user knows what went wrong.
+    stop("Unsupported fit object class: ", class(fit))
+  }
+}
+
+saveRDS(fx.get.log.lik.matrix, here("analysis",  "functions", "fx.get.log.lik.matrix.rds"))
+
+# fx.compare.loo 
+# Purpose:  Compute WAIC or PSIS‑LOO for a list of models and return
+#           a tidy data.frame whose rows are labelled with the supplied
+#           model names.
+# Arguments:
+#   fit_list   – list of fitted model objects (stanfit or CmdStanMCMC)
+#   model_names– character vector of names, same length as fit_list
+#   method     – "waic" or "psis" (default: waic)
+# Returns:   data.frame with columns: elpd_diff, se_diff, etc.
+
+fx.compare.loo <- function(fit_list, model_names,
+                           method = c("waic", "psis")) {
+  method <- match.arg(method)   # ensure method is either "waic" or "psis"
+  
+  # Compute criterion for each model 
+  crit_list <- lapply(fit_list, function(fit) {
+    # 1. Get the log‑likelihood matrix (draws × observations)
+    log_lik <- fx.get.log.lik.matrix(fit)
+    # 2. Feed it to the appropriate LOO function
+    if (method == "waic") loo::waic(log_lik) else loo::loo(log_lik)
+  })
+  
+  # Compare all criteria
+  tbl <- loo::loo_compare(crit_list)   # matrix with model1, model2, … rows
+  
+  # Replace generic row names with the real model names 
+  # loo_compare names rows "model1", "model2", … according to the
+  # original order in fit_list/model_names.
+  rownames(tbl) <- model_names[as.integer(gsub("model", "", rownames(tbl)))]
+  
+  # Return as a plain data.frame 
+  as.data.frame(tbl)
+}
+
+saveRDS(fx.compare.loo, here("analysis",  "functions", "fx.compare.loo.rds"))
+
+# ---- 4.Compute fold-change and probability  ----------------
+
+# Unified function to compute fold-change and probability draws for one model
+# model: a stanfit object (not an index/list - pass the fitted model directly)
+# range_min, range_max: observed min/max of the explanatory variable
+fx_fold_prob <- function(model, range_min, range_max, label = NA) {
+  post <- rstan::extract(model, pars = c("alpha", "beta"))
+  alpha_draws <- post$alpha
+  beta_draws  <- post$beta
+  
+  fold_draws  <- exp(beta_draws * (range_max - range_min))
+  p_min_draws <- inverse_logit(alpha_draws + beta_draws * range_min)
+  p_max_draws <- inverse_logit(alpha_draws + beta_draws * range_max)
+  
+  tibble(
+    metric         = label,
+    range_min      = range_min,
+    range_max      = range_max,
+    fold_mean      = round(mean(fold_draws),2),
+    fold_median    = round(quantile(fold_draws, 0.5),2),
+    fold_low       = round(quantile(fold_draws, 0.025),2),
+    fold_high      = round(quantile(fold_draws, 0.975),2),
+    p_at_min_mean   =round( mean(p_min_draws),4),
+    p_at_min_median = round(quantile(p_min_draws, 0.5),4),
+    p_at_min_low    = round(quantile(p_min_draws, 0.025),4),
+    p_at_min_high   = round(quantile(p_min_draws, 0.975),4),
+    p_at_max_mean   = round(mean(p_max_draws),4),
+    p_at_max_median = round(quantile(p_max_draws, 0.5),4),
+    p_at_max_low    = round(quantile(p_max_draws, 0.025),4),
+    p_at_max_high   = round(quantile(p_max_draws, 0.975),4)
+  )
+}
+
+saveRDS(fx_fold_prob, here("analysis",  "functions", "fx_fold_prob.rds"))
+
+
+# inverse logit function
+fx_inverse_logit <- function(x) {
+  p <- 1 / (1 + exp(-x))
+  p <- ifelse(x == Inf, 1, p)
+  p
+}
+
+saveRDS(fx_inverse_logit, here("analysis",  "functions", "fx_inverse_logit.rds"))
 
