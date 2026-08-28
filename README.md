@@ -176,13 +176,13 @@ local or archived source and install it manually. You can find older versions at
 the [INLA download website](https://www.r-inla.org/download-install) 
 
 ```r
-# To install version 24.05.10 of INLA
-remotes::install_version("INLA", version = "24.05.10",
+# To install version 25.10.19 of INLA
+remotes::install_version("INLA", version = "25.10.19",
 repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/testing"),
 dep = TRUE)
 
-# To install version 0.7.1 of cmdstan
-cmdstanr::install_cmdstan(version = "0.7.1")
+# To install version 0.9.0 of cmdstan
+cmdstanr::install_cmdstan(version = "0.9.1")
 ```
 
 ## How to cite
