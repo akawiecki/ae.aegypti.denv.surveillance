@@ -1,0 +1,13 @@
+"Dataset","Criterion","Model","Criterion_value","Criterion_value_se","ELPD_diff","ELPD_diff_se","CI_lo","CI_hi","Pareto_k_diagnostic","Significant"
+"Full dataset","WAIC","Vector DENV prevalence model",145.53,15.01,0,0,0,0,"-",NA
+"Full dataset","WAIC","Vector index model",173.66,21.37,-14.07,6.37,-26.55,-1.59,"-",TRUE
+"Full dataset","WAIC","Average vector abundance model",182.17,29.94,-18.32,11.88,-41.61,4.96,"-",FALSE
+"Full dataset","PSIS-LOO","Vector DENV prevalence model",146.67,15.31,0,0,0,0,"2 k_psis > 0.7",NA
+"Full dataset","PSIS-LOO","Vector index model",174.55,21.46,-13.94,6.14,-25.97,-1.91,"1 k_psis > 0.7",TRUE
+"Full dataset","PSIS-LOO","Average vector abundance model",182.51,29.96,-17.92,11.72,-40.88,5.05,"-",FALSE
+"Sensitivity analysis","WAIC","Vector DENV prevalence model",125.02,15.18,0,0,0,0,"-",NA
+"Sensitivity analysis","WAIC","Vector index model",130.93,17.04,-2.96,2.28,-7.43,1.51,"-",FALSE
+"Sensitivity analysis","WAIC","Average vector abundance model",135.78,22.4,-5.38,5.43,-16.02,5.26,"-",FALSE
+"Sensitivity analysis","PSIS-LOO","Vector DENV prevalence model",125.75,15.1,0,0,0,0,"1 k_psis > 0.7",NA
+"Sensitivity analysis","PSIS-LOO","Vector index model",131.48,17.01,-2.87,2.46,-7.69,1.95,"1 k_psis > 0.7",FALSE
+"Sensitivity analysis","PSIS-LOO","Average vector abundance model",137.51,23.17,-5.88,5.92,-17.48,5.72,"2 k_psis > 0.7",FALSE

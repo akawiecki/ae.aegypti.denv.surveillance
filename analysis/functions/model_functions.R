@@ -87,17 +87,22 @@ saveRDS(fx.fix.eff, here("analysis",  "functions",  "fx.fix.eff.rds"))
 # Output:
 #   - A combined data frame containing the exponentiated fixed effects estimates,
 #     model specifications (fixed and random effects), and model identifiers.
-
+m <- h.lag.list[1]
+x <- 1
 fx.stan.f.e <- function(m) {
   f.fix.eff.exp <- function(x) {
-    m[[x]]$summary(
-      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
-      mean, sd,
-      ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
-      se_mean = ~sd(.x) / sqrt(length(.x))
-    ) %>%
+    fit <- m[[x]]
+    all.pars <- names(fit@sim$samples[[1]])  # or use fit@model_pars / rstan::extract names
+    # safer: get available top-level par names
+    available <- rownames(rstan::summary(fit)$summary)
+
+    wanted <- c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma")
+    pars_use <- intersect(wanted, available)
+
+    s <- rstan::summary(fit, pars = pars_use)$summary %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column("parameter") %>%
       rename(
-        parameter       = variable,
         summary.mean    = mean,
         summary.sd      = sd,
         summary.2.5.    = `2.5%`,
@@ -114,9 +119,39 @@ fx.stan.f.e <- function(m) {
         m         = paste("m", x, sep = "."),
         index     = x
       )
+    s
   }
   lapply(seq_along(m), f.fix.eff.exp) %>% bind_rows()
 }
+# fx.stan.f.e <- function(m) {
+#   f.fix.eff.exp <- function(x) {
+#     m[[x]]$summary(
+#       variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]"),
+#       mean, sd,
+#       ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
+#       se_mean = ~sd(.x) / sqrt(length(.x))
+#     ) %>%
+#       rename(
+#         parameter       = variable,
+#         summary.mean    = mean,
+#         summary.sd      = sd,
+#         summary.2.5.    = `2.5%`,
+#         summary.25.     = `25%`,
+#         summary.50.     = `50%`,
+#         summary.97.5.   = `97.5%`,
+#         summary.se_mean = se_mean
+#       ) %>%
+#       mutate(
+#         mean.exp  = exp(summary.mean),
+#         sd.exp    = exp(summary.sd),
+#         q2.5.exp  = exp(summary.2.5.),
+#         q97.5.exp = exp(summary.97.5.),
+#         m         = paste("m", x, sep = "."),
+#         index     = x
+#       )
+#   }
+#   lapply(seq_along(m), f.fix.eff.exp) %>% bind_rows()
+# }
 
 # Save the extraction function as an RDS file for reuse in the analysis pipeline
 saveRDS(fx.stan.f.e, here("analysis",  "functions", "fx.stan.f.e.rds"))
@@ -126,7 +161,7 @@ saveRDS(fx.stan.f.e, here("analysis",  "functions", "fx.stan.f.e.rds"))
 fx.cmdstanr.f.e <- function(m) {
   f.fix.eff.exp <- function(x) {
     m[[x]]$summary(
-      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
+      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]"),
       mean, sd,
       ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
       se_mean = ~sd(.x) / sqrt(length(.x))
@@ -159,25 +194,25 @@ saveRDS(fx.cmdstanr.f.e, here("analysis",  "functions", "fx.cmdstanr.f.e.rds"))
 
 # ---- 4.Compare STAN models with WAIC and PSIS ----------------
 
-# fx.get.log.lik.matrix 
+# fx.get.log.lik.matrix
 # Purpose:  Extract the point‑wise log‑likelihood matrix from a fitted model,
 #           whether the model came from rstan (stanfit) or cmdstanr (CmdStanMCMC).
 # Returns:  A matrix (draws × observations) of log‑likelihood values.
 
 fx.get.log.lik.matrix <- function(fit) {
   # rstan case
-  if (inherits(fit, "stanfit")) {             
+  if (inherits(fit, "stanfit")) {
     # extract_log_lik pulls log_lik for each observation & each draw,
     # merge_chains = TRUE combines all chains into one matrix.
     loo::extract_log_lik(fit, merge_chains = TRUE)
-    
-    # cmdstanr case 
-  } else if (inherits(fit, "CmdStanMCMC")) {  
+
+    # cmdstanr case
+  } else if (inherits(fit, "CmdStanMCMC")) {
     # draws() retrieves the specified variable; format = "matrix" gives
     # a draws‑by‑observations matrix, same shape as the rstan output.
     fit$draws("log_lik", format = "matrix")
-    
-    # unsupported type 
+
+    # unsupported type
   } else {
     # Stop with a clear message so the user knows what went wrong.
     stop("Unsupported fit object class: ", class(fit))
@@ -186,7 +221,7 @@ fx.get.log.lik.matrix <- function(fit) {
 
 saveRDS(fx.get.log.lik.matrix, here("analysis",  "functions", "fx.get.log.lik.matrix.rds"))
 
-# fx.compare.loo 
+# fx.compare.loo
 # Purpose:  Compute WAIC or PSIS‑LOO for a list of models and return
 #           a tidy data.frame whose rows are labelled with the supplied
 #           model names.
@@ -199,24 +234,24 @@ saveRDS(fx.get.log.lik.matrix, here("analysis",  "functions", "fx.get.log.lik.ma
 fx.compare.loo <- function(fit_list, model_names,
                            method = c("waic", "psis")) {
   method <- match.arg(method)   # ensure method is either "waic" or "psis"
-  
-  # Compute criterion for each model 
+
+  # Compute criterion for each model
   crit_list <- lapply(fit_list, function(fit) {
     # 1. Get the log‑likelihood matrix (draws × observations)
     log_lik <- fx.get.log.lik.matrix(fit)
     # 2. Feed it to the appropriate LOO function
     if (method == "waic") loo::waic(log_lik) else loo::loo(log_lik)
   })
-  
+
   # Compare all criteria
   tbl <- loo::loo_compare(crit_list)   # matrix with model1, model2, … rows
-  
-  # Replace generic row names with the real model names 
+
+  # Replace generic row names with the real model names
   # loo_compare names rows "model1", "model2", … according to the
   # original order in fit_list/model_names.
   rownames(tbl) <- model_names[as.integer(gsub("model", "", rownames(tbl)))]
-  
-  # Return as a plain data.frame 
+
+  # Return as a plain data.frame
   as.data.frame(tbl)
 }
 
@@ -231,11 +266,11 @@ fx_fold_prob <- function(model, range_min, range_max, label = NA) {
   post <- rstan::extract(model, pars = c("alpha", "beta"))
   alpha_draws <- post$alpha
   beta_draws  <- post$beta
-  
+
   fold_draws  <- exp(beta_draws * (range_max - range_min))
-  p_min_draws <- inverse_logit(alpha_draws + beta_draws * range_min)
-  p_max_draws <- inverse_logit(alpha_draws + beta_draws * range_max)
-  
+  p_min_draws <- fx_inverse_logit(alpha_draws + beta_draws * range_min)
+  p_max_draws <- fx_inverse_logit(alpha_draws + beta_draws * range_max)
+
   tibble(
     metric         = label,
     range_min      = range_min,

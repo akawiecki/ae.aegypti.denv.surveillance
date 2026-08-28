@@ -1,6 +1,5 @@
 ---
 title: "Detection of dengue virus in Aedes aegypti during an urban epidemic in Iquitos, Peru (December 2010 to March 2011): results and tables"
-
 author: "Anna B. Kawiecki        ORCID: 0000-0002-0499-2612"
 output:
   pdf_document: default
@@ -18,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(here)
 
 # Grammar of tables for publication-quality outputs
-library(gt)
+ library(gt)
 
 # Simplifies working with dates and times
 library(lubridate)
@@ -77,8 +76,27 @@ l.aa_f <- lm(aa_female ~ 1, m.surv)
 confint(l.aa_f, level = 0.95)
 
 ```
+## Number of surveys with 0 Ae. aegypti females collected per week.
 
-<<<<<<< HEAD
+```{r}
+m.surv.0 <- m.surv %>% filter(aa_female == 0)  # Filter for surveys with zero females
+
+(nrow(m.surv.0)/nrow(m.surv))*100 # Count number of surveys with)
+```
+
+## Number of surveys with more than 5 Ae. aegypti females collected
+
+```{r}
+
+m.surv.high_aaf <- m.surv |> 
+  filter(aa_female > 5) 
+
+(nrow(m.surv.high_aaf)/nrow(m.surv))*100 # 1.354167
+
+# Only 1.35 % of surveys had more than 5 female Ae.aegypti
+```
+
+
 ## Average number of Ae. aegypti females collected per week in houses with at least 1 infected female. 
 
 ```{r Average number of Ae. aegypti females collected per week positive houses, warning=FALSE}
@@ -99,8 +117,17 @@ summary(m.surv.negative$aa_female)
 
 ```
 
-=======
->>>>>>> 039226c2534a9e37020f42822743fb30c9c8b648
+
+## Average number of Ae. aegypti females collected per week in houses with any females. 
+
+```{r Average number of Ae. aegypti females collected per week in houses with any females, warning=FALSE}
+
+m.surv.any <- m.surv %>% filter(aa_female > 0)
+# View summary statistics for Ae. aegypti females per survey-week
+summary(m.surv.any$aa_female)
+
+```
+
 ## How many surveys collected females that were infected? 
 
 ```{r How many surveys collected females that were infected, warning=FALSE}
@@ -286,7 +313,10 @@ table1 <- m.ae.pcr %>%
   rename('Number (%)' = value) %>%            # Rename final column
   dplyr::select(-c("key", "perc")) %>%        # Drop unneeded columns
   group_by(group) %>% 
-  gt(rowname_col = "statistic")               # Format for display table
+  gt(rowname_col = "statistic")  %>%          # Format for display table
+  gt::tab_header(
+     title = md("Table 1: Summary of adult mosquito surveys")
+   )
 
 table1  # Print table
 
@@ -383,13 +413,13 @@ table3 <- m.surv %>%
   # Arrange rows by variable order
   arrange(variable) %>% 
   # Group by variable for table formatting
-  group_by(variable) %>% 
-  # Create gt summary table
-  gt(rowname_col = "Statistic") %>% 
-  # Add table title
-  gt::tab_header(
-    title = md("Table 3: Adult mosquito surveys outcomes by surveillance strategy")
-  )
+  # group_by(variable) %>% 
+  # # Create gt summary table
+   gt(rowname_col = "variable") %>% 
+  # # Add table title
+   gt::tab_header(
+     title = md("Table 3: Adult mosquito surveys outcomes by surveillance strategy")
+   )
 
 table3
 

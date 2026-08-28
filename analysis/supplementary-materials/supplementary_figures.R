@@ -37,172 +37,14 @@ library(patchwork)
 
 # ---- 0.2 Color schemes ----
 
-area.colors <- c("#56B4E9", "#009E73", "#F0E442","#CC79A7" )
+area.colors <- c(
+  "#009E73",  # green     -> Vector abundance
+  "#0072B2",  # blue      -> Vector DENV prevalence
+  "#E69F00",  # orange    -> Vector index
+  "#CC79A7"   # pink      -> DENV infections/1000 people
+)
 agg.pallete <- brewer.pal(n = 3, name = "Set2")
-lag.pallete <- c('#0c2c84',"#8DD3C7",  "#BEBADA", "#FB8072", "#80B1D3",
-                 "#FDB462", "#B3DE69", "#FCCDE5")
 
-## ---- 1. Supplementary Figure 1 -----------------------------------------------
-
-# # Point estimates with associated 95%CI aggregated by
-# # epidemiological week and averaged over observations collected across
-# # the entire city for areas where adult female collections and febrile surveillance
-# # were concurrent (applying the same selection criteria that were applied to 
-# # select households for mosquito DENV testing in February and March 2011 to 
-# # both mosquito and human surveillance across the entire study period. )
-# 
-# # ---- 1.1 Read in data ----
-# m.h.surv.sen <- readRDS(here("analysis", "data", "derived_data","household_level_data",
-#                          "m.h.surv.sen.rds"))
-# 
-# # ---- 1.2 Ae. aegypti female abundance ----
-# 
-# iq.density.both <- m.h.surv.both %>%
-#   st_drop_geometry() %>%
-#   filter(host == "mosquito") %>%
-#   group_by(epiweek, date.surv) %>%
-#   # Calculate weekly mean abundance, standard deviation, standard error, and 95% CI
-#   mutate(
-#     mean     = mean(n.ind, na.rm = TRUE),
-#     sd       = sd(n.ind),
-#     se       = sd / sqrt(n()),
-#     ci_lower = mean - (1.96 * se),
-#     ci_upper = mean + (1.96 * se)
-#   ) %>%
-#   ungroup() %>%
-#   select(c("epiweek", "date.surv", "mean", "ci_lower", "ci_upper")) %>%
-#   distinct() %>%
-#   ggplot() +
-#   # Plot mean line
-#   geom_line(aes(x = date.surv, y = mean), size = 1) +
-#   # Plot points at each week
-#   geom_point(aes(x = date.surv, y = mean), size = 2, alpha = 0.9) +
-#   # Add confidence ribbon
-#   geom_ribbon(aes(x = date.surv, ymin = ci_lower, ymax = ci_upper),
-#               fill = "grey", alpha = 0.5) +
-#   # Area fill below mean line
-#   geom_area(aes(x = date.surv, y = mean), fill = area.colors[2], alpha = 0.4) +
-#   # X-axis: epidemiological week labels
-#   scale_x_date(
-#     date_labels = "%V\n%b",
-#     date_breaks = "week",
-#     expand = c(0, 0)
-#   ) +
-#   # Y-axis: clean formatting
-#   scale_y_continuous(expand = c(0, 0)) +
-#   theme_bw() +
-#   labs(
-#     title = expression(paste("Average ", italic("Ae.aegypti"), " abundance/survey")),
-#     x     = "Epidemiological week",
-#     y     = expression(paste("Average ", italic("Ae.aegypti"), " abundance/survey"))
-#   ) +
-#   theme_bw(base_size = 10, base_family = "Arial")
-# 
-# # ---- 2.2. Ae. aegypti DENV Prevalence ----
-# 
-# iq.ae.prev.both <- m.h.surv.both %>%
-#   st_drop_geometry() %>%
-#   filter(host == "mosquito") %>%
-#   # Handle missing tested counts and DENV values
-#   mutate(
-#     n.tested = na_if(n.tested, 0),
-#     n.denv   = case_when(is.na(n.tested) ~ NA, TRUE ~ n.denv)
-#   ) %>%
-#   group_by(epiweek, date.surv) %>%
-#   # Calculate prevalence and CI
-#   mutate(
-#     prevalence = sum(n.denv, na.rm = TRUE) / sum(n.tested, na.rm = TRUE),
-#     se = sqrt((prevalence * (1 - prevalence)) / sum(n.tested, na.rm = TRUE))
-#   ) %>%
-#   reframe(
-#     sum.n.tested = sum(n.tested, na.rm = TRUE),
-#     l.ci         = prevalence - 1.96 * se,
-#     u.ci         = prevalence + 1.96 * se,
-#     prevalence.p.100 = prevalence * 100,
-#     perc.l.ci    = l.ci * 100,
-#     perc.u.ci    = u.ci * 100
-#   ) %>%
-#   distinct() %>%
-#   ungroup() %>%
-#   ggplot() +
-#   geom_line(aes(x = date.surv, y = prevalence.p.100), size = 1) +
-#   geom_point(aes(x = date.surv, y = prevalence.p.100), size = 2, alpha = 0.9) +
-#   geom_ribbon(aes(x = date.surv, ymin = perc.l.ci, ymax = perc.u.ci),
-#               fill = "grey", alpha = 0.5) +
-#   geom_area(aes(x = date.surv, y = prevalence.p.100), fill = area.colors[1], alpha = 0.4) +
-#   scale_x_date(
-#     date_labels = "%V\n%b",
-#     date_breaks = "week",
-#     expand = c(0, 0)
-#   ) +
-#   scale_y_continuous(expand = c(0, 0)) +
-#   theme_bw() +
-#   labs(
-#     title = expression(paste(italic("Ae.aegypti"), " DENV prevalence (%)")),
-#     x     = "Epidemiological week",
-#     y     = expression(paste(italic("Ae.aegypti"), " DENV prevalence (%)"))
-#   ) +
-#   theme_bw(base_size = 10, base_family = "Arial")
-# 
-# # ---- 2.3 Human DENV incidence ----
-# 
-# iq.hum.inc.both <- m.h.surv.both %>%
-#   st_drop_geometry() %>%
-#   # Exclude specific municipalities
-#   filter(!(moh %in% c("29", "32", "33", "34", "22", "23", "24",
-#                       "25", "26", "27", "28", "30", "31"))) %>%
-#   filter(host == "human") %>%
-#   mutate(
-#     n.tested = na_if(n.tested, 0),
-#     n.denv   = case_when(is.na(n.tested) ~ NA, TRUE ~ n.denv)
-#   ) %>%
-#   group_by(epiweek, date.surv) %>%
-#   mutate(
-#     prevalence = sum(n.denv, na.rm = TRUE) / sum(n.ind, na.rm = TRUE),
-#     se = sqrt((prevalence * (1 - prevalence)) / sum(n.ind, na.rm = TRUE))
-#   ) %>%
-#   reframe(
-#     sum.n.ind        = sum(n.ind, na.rm = TRUE),
-#     l.ci             = prevalence - 1.96 * se,
-#     u.ci             = prevalence + 1.96 * se,
-#     incidence.p.1000 = prevalence * 1000,
-#     perc.l.ci        = l.ci * 1000,
-#     perc.u.ci        = u.ci * 1000
-#   ) %>%
-#   distinct() %>%
-#   ungroup() %>%
-#   ggplot() +
-#   geom_line(aes(x = date.surv, y = incidence.p.1000), size = 1) +
-#   geom_point(aes(x = date.surv, y = incidence.p.1000), size = 2, alpha = 0.9) +
-#   geom_ribbon(aes(x = date.surv, ymin = perc.l.ci, ymax = perc.u.ci),
-#               fill = "grey", alpha = 0.5) +
-#   geom_area(aes(x = date.surv, y = incidence.p.1000), fill = area.colors[4], alpha = 0.4) +
-#   scale_x_date(
-#     date_labels = "%V\n%b",
-#     date_breaks = "week",
-#     expand = c(0, 0)
-#   ) +
-#   scale_y_continuous(expand = c(0, 0)) +
-#   theme_bw() +
-#   labs(
-#     title = "DENV infections/1000 individuals under surveillance",
-#     x     = "Epidemiological week",
-#     y     = "DENV infections \nper 1000 individuals"
-#   ) +
-#   theme_bw(base_size = 10, base_family = "Arial")
-# 
-# # ---- 2.4 Combine all three panels into one figure ----
-# 
-# SFig1 <- iq.density.both / iq.ae.prev.both / iq.hum.inc.both + plot_annotation(
-#   tag_levels = 'A' # Automatically label panels as A, B, C
-# )
-# 
-# 
-# # Export combined figure to file
-# ggsave(here("analysis", "supplementary-materials", "SFig1.jpg"),
-#        SFig1,
-#        width = 250, height = 250, dpi = 500, units = "mm")
-# 
 
 # ---- 1. Supplementary Figure 1 -----------------------------------------------
 # ---- 1.1 Read in data ----
@@ -216,8 +58,8 @@ h.area.sen.long <- h.area.sen %>%
                names_to = "variable", values_to = "value") %>%
   # There was no human surveillance in this area.
   mutate( value = case_when(
-    variable == "incidence.p.1000" & area == "san.juan" ~ NA, 
-    T ~ value )) |> 
+    variable == "incidence.p.1000" & area == "san.juan" ~ NA,
+    T ~ value )) |>
   mutate(
     area = case_when(
       area == "punchana"  ~ "North Iquitos",
@@ -239,14 +81,7 @@ h.area.sen.long <- h.area.sen %>%
     ))
   ) %>%
   filter(!is.na(value))
-# NOTE:
-# Because original observations are grouped by host (e.g., human/mosquito),
-# some area-date-variable combinations appear multiple times (e.g., NA for both hosts).
-# After reshaping to long format, these duplicated NA combinations remain,
-# unless explicitly filtered out.
 
-# Aedes DENV prevalence and vector index share the left y-axis
-# DENV infection/1000 people & average vector abundance share the right y-axis.
 
 # ---- 1.2 Plot
 
@@ -277,11 +112,16 @@ Sfig1 <- h.area.sen.long %>%
     axis.text.x = element_text(size = 6.5)
   )
 
-# Seave output area plots with legend
-ggsave(here("analysis", "supplementary-materials", "SFig1.jpg"),
+# Save output area plots with legend as jpg
+ggsave(here("analysis", "supplementary-materials", "S1Fig.jpg"),
        Sfig1,
        width = 260, height = 150, dpi = 500, units = "mm")
 
+# Save output area plots with legend as pdf
+ggsave(here("analysis", "supplementary-materials", "S1Fig.pdf"),
+       Sfig1,
+       width = 260, height = 150, dpi = 500, units = "mm",
+       device = cairo_pdf)
 
 
 # ---- 2. Supplementary Figure 2 -----------------------------------------------
@@ -314,7 +154,7 @@ h.sen.lag.fe.df <- h.sen.lag.fe.df%>%
                                              "Ae. aegypti \nfemale abundance")))
 # ---- 2.2 Plot figure ----
 
-# Plot panel A 
+# Plot panel A
 h.sen.beta.fe.plot <- h.sen.lag.fe.df  %>%
   filter(model.structure =="combined effect of weighted week lags" &
            parameter== "beta") %>%
@@ -397,14 +237,17 @@ Sfig.2.plot <-
   plot_annotation(  tag_levels = 'A')
 
 # Save as a high-resolution JPEG file
-ggsave(here("analysis", "supplementary-materials", "SFig2.jpg"),
+ggsave(here("analysis", "supplementary-materials", "S2Fig.jpg"),
        Sfig.2.plot ,
        width = 260, height = 150, dpi = 500, units = "mm")
 
-
-
+# .pdf
+ggsave(here("analysis", "supplementary-materials", "S2Fig.pdf"),
+       Sfig.2.plot ,
+       width = 260, height = 150, dpi = 500, units = "mm",
+device = cairo_pdf)
 # ---- 3. Supplementary Figure 3 -----------------------------------------------
-# Association between Ae. aegypti abundance and probability of DENV detection 
+# Association between Ae. aegypti abundance and probability of DENV detection
 # A) and B) represent results from prior sensitivity analysis for models with
 # the explanatory variable average Ae. aegypti female abundance and outcome
 # Ae. aegypti female DENV prevalence.
@@ -476,7 +319,7 @@ priors.m.01.lag.fe.plot <- priors.m.01.fe.df %>%
   theme_bw(
     base_size = 10,
     base_family = "Arial",
-  ) + 
+  ) +
   guides(color="none")+
   theme(
     strip.text = element_text(size = 6)  # Change font size here
@@ -503,10 +346,15 @@ SFig3 <-
 
 
 # Save as a high-resolution JPEG file
-ggsave(here("analysis", "supplementary-materials", "SFig3.jpg"),
+ggsave(here("analysis", "supplementary-materials", "S3Fig.jpg"),
        SFig3 ,
        width = 200, height = 200, dpi = 500, units = "mm")
 
+# .pdf
+ggsave(here("analysis", "supplementary-materials", "S3Fig.pdf"),
+       SFig3 ,
+       width = 200, height = 200, dpi = 500, units = "mm",
+device = cairo_pdf)
 # ---- 4. Supplementary Figure 4 -----------------------------------------------
 
 # Association between Ae. aegypti DENV prevalence and DENV incidence in humans ----
@@ -612,10 +460,17 @@ SFig4 <-
   plot_layout(guides = "collect",design= layout) &
   theme(legend.position = "bottom")
 
-ggsave(here("analysis", "supplementary-materials", "SFig4.jpg"),
+ggsave(here("analysis", "supplementary-materials", "S4Fig.jpg"),
        SFig4 ,
        width = 200, height = 200,
        dpi = 500, units = "mm")
+
+# .pdf
+ggsave(here("analysis", "supplementary-materials", "S4Fig.jpg"),
+       SFig4 ,
+       width = 200, height = 200,
+       dpi = 500, units = "mm",
+device = cairo_pdf)
 
 # ---- 5. Supplementary Figure 5 -----------------------------------------------
 
@@ -669,9 +524,14 @@ m.lag.fe.sup.plot <- m.lag.fe.df %>%
   )
 
 # Save the plot to file for use in supplementary materials
-ggsave(here("analysis", "supplementary-materials", "SFig5.jpg"),
+ggsave(here("analysis", "supplementary-materials", "S5Fig.jpg"),
        m.lag.fe.sup.plot,
        width = 150, height = 100, dpi = 500, units = "mm")
+
+ggsave(here("analysis", "supplementary-materials", "S5Fig.pdf"),
+       m.lag.fe.sup.plot,
+       width = 150, height = 100, dpi = 500, units = "mm",
+device = cairo_pdf)
 
 # ---- 6. Supplementary Figure 6 -----------------------------------------------
 
@@ -730,21 +590,25 @@ h.lag.fe.sup.plot <- h.lag.fe.df %>%
 
 
 # Save as a high-resolution JPEG file
-ggsave(here("analysis", "supplementary-materials", "SFig6.jpg"),
+ggsave(here("analysis", "supplementary-materials", "S6Fig.jpg"),
        h.lag.fe.sup.plot,
        width = 150, height = 100, dpi = 500, units = "mm")
 
-
+# .pdf
+ggsave(here("analysis", "supplementary-materials", "S6Fig.pdf"),
+       h.lag.fe.sup.plot,
+       width = 150, height = 100, dpi = 500, units = "mm",
+device = cairo_pdf)
 # ---- 7. Supplementary Table 1 ------------------------------------------------
 
 S1Table <- readRDS(here("analysis", "outputs", "models", "gof_diff_summary.rds"))
 
+openxlsx::write.xlsx(S1Table, here("analysis", "supplementary-materials", "S1_Table.xlsx"))
 
-write.csv(S1Table, here("analysis", "supplementary-materials",  "S1Table.csv"), row.names = FALSE)
 
 # ---- 8. Supplementary Table 2 ------------------------------------------------
 
 S2Table <- readRDS(here("analysis", "outputs", "models", "h.lag.results.rds"))
 
-write.csv(S2Table, here("analysis", "supplementary-materials",  "S2Table.csv"))
+openxlsx::write.xlsx(S2Table, here("analysis", "supplementary-materials", "S2_Table.xlsx"))
 

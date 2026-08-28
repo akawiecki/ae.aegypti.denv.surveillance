@@ -251,14 +251,15 @@ m.s.b.fe.df %>%
 # Save the full fixed effects summary for all models
 saveRDS(m.s.b.fe.df, here("analysis", "outputs", "models",  "m.s.b.fe.df.rds"))
 
-# variable              mean  sd   q0.025 q0.5 q0.975 mode kld  fixed     
-# 1                  b0 0.03 1.46   0.01 0.03   0.05 0.03   1 b0+pos.case.contact.f1+aa_female.i 
-# 2 pos.case.contact.f1 0.86 1.85   0.26 0.86   2.87 0.86   1 b0+pos.case.contact.f1+aa_female.i 
-# 3         aa_female.i 1.08 1.03   1.03 1.08   1.14 1.08   1 b0+pos.case.contact.f1+aa_female.i 
-
 # ---- 1.2.2.1 Evaluate fixed effects of logistic models with female counts ----
 
-m.s.b.2.fe.df <- fx.fix.eff(list(m.s.b.2)) 
+m.s.b.2.fe.df <- fx.fix.eff(list(m.s.b.2))
+
+# variable              mean  sd   q0.025 q0.5 q0.975 mode kld  fixed
+# 1                  b0 0.03 1.46   0.01 0.03   0.05 0.03   1 b0+pos.case.contact.f1+aa_female.i
+# 2 pos.case.contact.f1 0.86 1.85   0.26 0.86   2.87 0.86   1 b0+pos.case.contact.f1+aa_female.i
+# 3         aa_female.i 1.08 1.03   1.03 1.08   1.14 1.08   1 b0+pos.case.contact.f1+aa_female.i
+
 
 saveRDS(m.s.b.2.fe.df, here("analysis", "outputs", "models",  "m.s.b.2.fe.df.rds"))
 
@@ -411,8 +412,6 @@ m.lag.fe <- fx.stan.f.e(m.lag.list)
 m.lag.fe.df <- m.lag.fe %>%
   # Merge with model index
   left_join(m.lag.list.index) %>%
-  # Exclude intercept and error scale
-  filter(parameter != "sigma") %>%
   # Annotate each parameter with lag information
   mutate(lag = case_when(
     str_detect(parameter, "\\[1\\]$") == TRUE ~ "same week",
@@ -510,41 +509,41 @@ lapply(names(loo_list), function(nm) {
 # [[1]]
 # [[1]]$model
 # [1] "Vector DENV prevalence model"
-# 
+#
 # [[1]]$n_flagged
 # [1] 2
-# 
+#
 # [[1]]$flagged_obs
 # [1]  2 18
-# 
+#
 # [[1]]$max_k
 # [1] 0.7641723
-# 
-# 
+#
+#
 # [[2]]
 # [[2]]$model
 # [1] "Vector index model"
-# 
+#
 # [[2]]$n_flagged
 # [1] 0
-# 
+#
 # [[2]]$flagged_obs
 # integer(0)
-# 
+#
 # [[2]]$max_k
 # [1] 0.5833503
-# 
-# 
+#
+#
 # [[3]]
 # [[3]]$model
 # [1] "Average vector abundance model"
-# 
+#
 # [[3]]$n_flagged
 # [1] 1
-# 
+#
 # [[3]]$flagged_obs
 # [1] 2
-# 
+#
 # [[3]]$max_k
 # [1] 0.7792133
 
@@ -686,7 +685,7 @@ saveRDS(h.0.sen.waic.loo, here("analysis", "outputs", "models","h.0.sen.waic.loo
 saveRDS(h.0.sen.psis.loo, here("analysis", "outputs", "models","h.0.sen.psis.loo.rds"))
 
 # ---- 4.2  Fixed effects analysis comparison ----
-h.sen.lag.fe <- fx.stan.f.e.cmdstanr(h.0.sen.lag.list)
+h.sen.lag.fe <- fx.cmdstanr.f.e(h.0.sen.lag.list)
 
 
 # Create dataframe with named fixed effects and estimates
@@ -761,10 +760,10 @@ fx.loo.diff.table <- function(tbl, dataset_label = "", criterion_label = "") {
   # diag_diff, diag_elpd, and waic/looic, se_waic/se_looic
   ic_col    <- if ("waic" %in% names(tbl)) "waic" else "looic"
   se_ic_col <- if ("waic" %in% names(tbl)) "se_waic" else "se_looic"
-  
+
   ci_lo <- tbl$elpd_diff - 1.96 * tbl$se_diff
   ci_hi <- tbl$elpd_diff + 1.96 * tbl$se_diff
-  
+
   data.frame(
     Dataset                = dataset_label,
     Criterion              = criterion_label,
