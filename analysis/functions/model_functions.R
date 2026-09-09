@@ -335,7 +335,7 @@ fx.ppc.bayes.summary <- function(y_obs, y_pred, model_label,
   stopifnot(nrow(y_pred) == length(y_obs))
   stopifnot(!any(is.na(y_obs)))
 
-  yrep_t <- t(y_pred)  # n_sim x n_obs, required orientation for bayesplot
+  yrep_t <- t(y_pred)  # n_sim x n_obs
 
   results <- lapply(names(stats), function(stat_name) {
     stat_fun <- stats[[stat_name]]
