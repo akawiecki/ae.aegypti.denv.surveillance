@@ -141,6 +141,52 @@ m.house.infected <- m.ae.pcr %>%
 nrow(m.house.infected)
 ```
 
+## Surveys where females were tested 
+```{r}
+table(m.surv$ae.f.survey)
+
+nrow(m.surv |> filter(ae.f.survey == "DENV positive (>=1 Ae.ae female)"))
+# 75
+
+nrow(m.surv |> filter(ae.f.survey == "DENV negative (all Ae.ae females)"))
+# 1170
+
+nrow(m.surv |> filter(ae.f.survey == "DENV positive (>=1 Ae.ae female)")) +
+  nrow(m.surv |> filter(ae.f.survey == "DENV negative (all Ae.ae females)"))
+# 1245
+
+```
+
+
+# In surveys where females were tested: distribution of adult females and positive surveys
+
+```{r surveys where females were tested}
+# Surveys where females were tested
+denv.house.num <- m.surv |> filter(!is.na(denv.house.num))
+
+# Proportion of surveys where none of the tested females were positive
+nrow(denv.house.num |> filter(denv.house.num == 0))/nrow(denv.house.num) # 0.94
+
+# Proportion of surveys where at least one of the tested females were positive
+nrow(denv.house.num |> filter(denv.house.num == 1))/nrow(denv.house.num) # 0.06
+
+# Proportion of surveys  where females were tested with only 1 female collected
+nrow(denv.house.num |> filter(aa_female == 1))/nrow(denv.house.num) # 0.58
+
+# Proportion of surveys where females were tested with >5 females collected
+nrow(denv.house.num |> filter(aa_female > 5))/nrow(denv.house.num) # 0.057
+
+sum(denv.house.num$n) # 2795
+sum(denv.house.num$n.pos.mosq) # 128
+sum(denv.house.num$n.pos.mosq)/sum(denv.house.num$n) # 0.04579
+
+summary(denv.house.num$aa_female)
+
+#  Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  1.000   1.000   1.000   2.262   2.000 127.000 
+```
+
+
 ## How many households had DENV-infected females? 
 
 ```{r How many households had DENV-infected females, warning=FALSE}

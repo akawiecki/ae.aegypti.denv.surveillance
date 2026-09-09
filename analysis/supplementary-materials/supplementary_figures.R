@@ -599,6 +599,7 @@ ggsave(here("analysis", "supplementary-materials", "S6Fig.pdf"),
        h.lag.fe.sup.plot,
        width = 150, height = 100, dpi = 500, units = "mm",
 device = cairo_pdf)
+
 # ---- 7. Supplementary Table 1 ------------------------------------------------
 
 S1Table <- readRDS(here("analysis", "outputs", "models", "gof_diff_summary.rds"))
@@ -612,3 +613,8 @@ S2Table <- readRDS(here("analysis", "outputs", "models", "h.lag.results.rds"))
 
 openxlsx::write.xlsx(S2Table, here("analysis", "supplementary-materials", "S2_Table.xlsx"))
 
+# ---- 9. Supplementary Table 3 ------------------------------------------------
+
+S3Table <- readRDS(here("analysis", "outputs", "models", "ppc.rds"))
+
+openxlsx::write.xlsx(S3Table, here("analysis", "supplementary-materials", "S3_Table.xlsx"))

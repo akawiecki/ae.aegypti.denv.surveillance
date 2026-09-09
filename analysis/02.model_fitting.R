@@ -100,6 +100,15 @@ h.area.week.lag.4 <- readRDS(here("analysis", "data", "derived_data",
 
 # ---- 1.2 INLA spatial autocorrelation preparation ----
 
+# Inverse logit function
+# Used to transform linear predictors to probabilities.
+
+inverse_logit <- function (x){
+  p <- 1 / (1 + exp(-x))
+  p <- ifelse(x == Inf, 1, p)
+  p
+}
+
 # ---- 1.2.1 INLA mesh ----
 
 # Combine coordinates from dataset
@@ -218,6 +227,8 @@ stk.m.s.nb.1.e <- inla.stack(
   )
 )
 
+saveRDS(stk.m.s.nb.1.e, here("analysis", "outputs", "models", "stk.m.s.nb.1.e.rds"))
+
 # ---- 2.1.3  Negative binomial model fitting ----
 
 # Negative binomial - Baseline intercept-only model
@@ -294,6 +305,8 @@ stk.m.s.b.1.e <- inla.stack(
   )
 )
 
+saveRDS(stk.m.s.b.1.e, here("analysis", "outputs", "models", "stk.m.s.b.1.e.rds"))
+
 # ---- 2.2.3  Logistic model fitting ----
 
 # Bernouilli Baseline intercept-only model
@@ -335,12 +348,12 @@ saveRDS(m.s.b.base.0, here("analysis", "outputs", "models", "m.s.b.base.0.rds"))
 saveRDS(m.s.b.base.1, here("analysis", "outputs", "models", "m.s.b.base.1.rds"))
 saveRDS(m.s.b.1, here("analysis", "outputs", "models", "m.s.b.1.rds"))
 
-# ---- 2.3 Logistic model with additional term for aa_females ----
+# ---- 2.3 Logistic model with additional term for aa_females
 # Bernoulli with sampling strategy type, sampling effort, and spatial autocorrelation
 m.s.b.2.formula <- y ~ 0 + b0 + pos.case.contact.f1 + aa_female.i + f(s, model = spde.d.m)
 
-# ---- 2.3.1  Logistic model stack surveillance strategy + aa_females ----
-# Create model matrix for surveillance strategy + aa_females
+# ---- 2.2.2  Logistic model stack ----
+# Create model matrix for surveillance strategy
 
 # Create INLA stack for model estimation
 stk.m.s.b.2.e <- inla.stack(
@@ -356,6 +369,8 @@ stk.m.s.b.2.e <- inla.stack(
     s = index.d.m.s                      # spatial random effect index
   )
 )
+
+saveRDS(stk.m.s.b.2.e, here("analysis", "outputs", "models", "stk.m.s.b.2.e.rds"))
 
 # Bernoulli with sampling strategy type, sampling effort, and spatial autocorrelation
 m.s.b.2 <- inla(m.s.b.2.formula,
@@ -425,6 +440,8 @@ stk.m.b.2.e <- inla.stack(
     month = d.m$month.t),
     s = index.d.m.s)
 )
+
+saveRDS(stk.m.b.2.e, here("analysis", "outputs", "models", "stk.m.b.2.e.rds"))
 
 # ---- 3.1.3 Household-level logistic model fitting ----
 
@@ -535,14 +552,14 @@ parameters {
   real alpha;            // Intercept term
   real beta;             // Coefficient applied to the weighted sum of lagged predictors
   simplex[5] w;          // Simplex: weights for each of the 5 lag predictors
-
+  real<lower=0> sigma;   // Standard deviation for error term
 }
 model {
   vector[N] p;           // Vector to hold linear predictor values per observation
   alpha ~ normal(0, 1.5);        // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);         // Prior for slope coefficient
   w ~ dirichlet(a);              // Dirichlet prior on lag weights
-
+  sigma ~ exponential(1);        // Exponential prior on sigma
 
   for (i in 1:N) {
     // Compute linear predictor as weighted sum of lagged predictors, scaled by beta
@@ -608,7 +625,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -616,7 +633,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
-
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -668,7 +685,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -676,6 +693,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -724,7 +742,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -732,7 +750,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
-
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -781,7 +799,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -789,7 +807,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
-
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -838,7 +856,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -846,7 +864,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
-
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -895,7 +913,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -903,7 +921,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
-
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -951,7 +969,7 @@ data {
 parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor for binomial probability
@@ -959,6 +977,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);        // Prior for abundance effect
+  sigma ~ exponential(1);       // Prior on error scale (not used directly)
 
   // Likelihood
   for (i in 1:N) {
@@ -1072,7 +1091,7 @@ parameters {
   real alpha;                 // Intercept
   real beta;                  // Overall effect of weighted Ae. aegypti prevalence
   simplex[5] w;               // Weights for each lag (constrained to sum to 1)
-
+  real<lower=0> sigma;        // Error scale
 }
 model {
   vector[N] p;                // Linear predictor
@@ -1081,7 +1100,7 @@ model {
   alpha ~ normal(0, 0.5);     // Prior for intercept
   beta ~ normal(0, 0.2);      // Prior for overall abundance effect
   w ~ dirichlet(a);           // Dirichlet prior on lag weights
-
+  sigma ~ exponential(1);     // Prior on error scale
 
   // Likelihood
   for (i in 1:N) {
@@ -1143,7 +1162,7 @@ parameters {
   real alpha;                    // Intercept term
   real beta;                     // Coefficient for weighted lag predictor
   simplex[5] w;                  // Lag weights (constrained to sum to 1)
-
+  real<lower=0> sigma;           // Error scale (not directly used here but declared)
 }
 model {
   vector[N] p;                   // Linear predictor
@@ -1152,7 +1171,7 @@ model {
   alpha ~ normal(0, 1.5);        // Weakly informative prior for intercept
   beta ~ normal(0, 0.5);         // Prior for total effect of average Ae. aegypti abundance
   w ~ dirichlet(a);              // Dirichlet prior on lag weights
-
+  sigma ~ exponential(1);        // Prior on scale (unused)
 
   // Linear model and likelihood
   for (i in 1:N) {
@@ -1217,7 +1236,7 @@ parameters {
   real alpha;                   // Intercept term
   real beta;                    // Coefficient for total effect
   simplex[5] w;                 // Lag weights (constrained to sum to 1 via Dirichlet prior)
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor
@@ -1226,6 +1245,7 @@ model {
   alpha ~ normal(0, 0.5);       // Prior for intercept
   beta ~ normal(0, 0.2);        // Prior for total effect of vector index
   w ~ dirichlet(a);             // Dirichlet prior for week lag weights
+  sigma ~ exponential(1);       // Prior on error scale
 
   // Likelihood
   for (i in 1:N) {
@@ -1309,6 +1329,7 @@ data {
 parameters {
   real alpha;                   // Intercept
   real beta;                    // Coefficient for prevalence predictor
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;
@@ -1316,6 +1337,7 @@ model {
   // Priors
   alpha ~ normal(0, 0.5);       // Prior on intercept
   beta ~ normal(0, 0.2);        // Prior on effect of prevalence
+  sigma ~ exponential(1);       // Prior on error scale
 
   // Likelihood
   for (i in 1:N) {
@@ -1415,7 +1437,7 @@ data {
 parameters {
   real alpha;                   // Intercept
   real beta;                    // Coefficient for average Ae. ae density
-
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor
@@ -1423,6 +1445,7 @@ model {
   // Priors
   alpha ~ normal(0, 1.5);       // Prior for intercept
   beta ~ normal(0, 0.5);        // Prior on avg.aa.f effect
+  sigma ~ exponential(1);       // Prior on error scale
 
   // Likelihood
   for (i in 1:N) {
@@ -1504,6 +1527,7 @@ data {
 parameters {
   real alpha;                   // Intercept
   real beta;                    // Coefficient for vector index
+  real<lower=0> sigma;          // Error scale
 }
 model {
   vector[N] p;                  // Linear predictor
@@ -1511,7 +1535,7 @@ model {
   // Priors
   alpha ~ normal(0, 0.5);       // Weak prior for intercept
   beta ~ normal(0, 0.2);        // Prior on vegetation index effect
-
+  sigma ~ exponential(1);       // Prior on error scale
 
   // Likelihood
   for (i in 1:N) {
@@ -1599,8 +1623,8 @@ saveRDS(h.lag.list.index, here("analysis", "outputs", "models",
 
 
 # ---- 5. Sensitivity analysis ----
-# Association between Ae. aegypti DENV prevalence and DENV incidence in humans
-# with uniform household selection criteria dataset.
+# Association between Ae. aegypti DENV prevalence and DENV incidence in humans 
+# with the uniform sampling dataset. 
 
 # Dirichlet-weighted 4-week lags sensitivity analysis  ----
 
@@ -1671,9 +1695,9 @@ dat.03.sen <- list(
 )
 
 
-# ---- 5.4 Fit Dirichlet-weighted models ----
+# ---- 4.1.4 Fit Dirichlet-weighted models ----
 
-# Fit models with cmdstanr
+# ---- Fit and save ----
 
 fit_cmdstanr <- function(model_code, data,
                          chains = 4, iter_warmup = 1000,
@@ -1691,7 +1715,88 @@ fit.h.01.sen <- fit_cmdstanr(h.01, dat.01.sen)
 fit.h.02.sen <- fit_cmdstanr(h.02, dat.02.sen)
 fit.h.03.sen <- fit_cmdstanr(h.03, dat.03.sen)
 
-# Save all models with human incidence outcomes fitted with sensitivity analysis dataset
+# $save_object bundles the CSVs into one self-contained .rds
+# (plain saveRDS() breaks once the temp CSV files are cleaned up by R)
 fit.h.01.sen$save_object(here("analysis", "outputs", "models", "fit.h.01.sen.rds"))
 fit.h.02.sen$save_object(here("analysis", "outputs", "models", "fit.h.02.sen.rds"))
 fit.h.03.sen$save_object(here("analysis", "outputs", "models", "fit.h.03.sen.rds"))
+
+# 
+# # Fit models of weighted lagged vector metrics vs. human incidence
+# 
+# fit.h.01.sen   <- rstan::stan(model_code = h.01,
+#                          data = dat.01.sen,
+#                          iter = 2000,
+#                          chains = 4,
+#                          control=list(adapt_delta=0.99))
+# 
+# fit.h.02.sen  <- rstan::stan(model_code = h.02,
+#                          data = dat.02.sen ,
+#                          iter = 2000,
+#                          chains = 4,
+#                          control=list(adapt_delta=0.99))
+# 
+# fit.h.03.sen   <- rstan::stan(model_code = h.03,
+#                          data = dat.03.sen,
+#                          iter = 2000,
+#                          chains = 4,
+#                          control=list(adapt_delta=0.99))
+# 
+# # ---- 5.2 Fit Dirichlet-weighted models sensitivity analysis ----
+# 
+# # check cmdstan is installed and pointed to correctly
+# cmdstan_path()
+# cmdstan_version()
+# 
+# # write model to a .stan file
+# h.01.stan <- write_stan_file(h.01)
+# 
+# h.01.mod <- cmdstan_model(h.01.stan)
+# 
+# fit.h.01.sen <- h.01.mod$sample(
+#   data = dat.02.sen,
+#   chains = 4,
+#   iter_warmup = 1000,
+#   iter_sampling = 1000,
+#   adapt_delta = 0.99,
+#   parallel_chains = 4
+# )
+# 
+# rstan::read_stan_csv(fit.h.01.sen$output_files())
+# 
+# # write model to a .stan file
+# h.02.stan <- write_stan_file(h.02)
+# 
+# h.02.mod <- cmdstan_model(h.02.stan)
+# 
+# fit.h.02.sen <- h.02.mod$sample(
+#   data = dat.02.sen,
+#   chains = 4,
+#   iter_warmup = 1000,
+#   iter_sampling = 1000,
+#   adapt_delta = 0.99,
+#   parallel_chains = 4
+# )
+
+# Fit models of weighted lagged vector metrics vs. human incidence
+
+# fit.h.01.sen  <- rstan::stan(model_code = h.01.sen,
+#                          data = dat.01,
+#                          iter = 2000,
+#                          chains = 4,
+#                          control=list(adapt_delta=0.99))
+
+
+# # ----  5.3 Compile and save models with human incidence outcomes ----
+# 
+# # Make list of models with Dirichlet-weighted lags and human incidence outcomes
+# h.0.sen.lag.list <- list(fit.h.01.sen)
+# 
+# # Assign name to models with Dirichlet-weighted lags and human incidence outcomes
+# h.0.sen.lag.list.index <- data.frame(model.name= c("h.01.sen"),
+#                                  index= seq(1,length(h.0.sen.lag.list), by=1))
+# 
+# # Save models with Dirichlet-weighted lags and human incidence outcomes
+# saveRDS(h.0.sen.lag.list, here("analysis", "outputs", "models", "h.0.sen.lag.list.rds"))
+# saveRDS(h.0.sen.lag.list.index, here("analysis", "outputs", "models",
+#                                  "h.0.sen.lag.list.index.rds"))

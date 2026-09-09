@@ -40,17 +40,17 @@ broader surveillance (household-level models):
      (area-level models).
  
 * **`03.model_results.R`**: `R` script to extract model outputs: 
-estimated effect sizes and Watanabe-Akaike information criterion (WAIC) to measure 
-goodness of fit. 
+estimated effect sizes, goodness-of-fit metrics and posterior predictive checks. 
 
-* **`04.model_prior sensitivity.R`**: `R` script to perform prior sensitivity analysis
+* **`04.model_prior_sensitivity.R`**: `R` script to perform prior sensitivity analysis
 for Dirichlet-weighted 4-week lags area-level models in developed in STAN. 
 
 * [:file_folder: functions](/analysis/functions): 
 This folder contains:
 
     * **`model_functions.R`**: an `R` script with functions used to extract 
-goodness-of-fit metrics and parameter estimates from fitted INLA and STAN models.
+goodness-of-fit metrics and parameter estimates, and perform posterior predictive 
+checks for models fitted INLA and STAN.
     * Pre-compiled function objects saved as `.rds` files for quick loading and reuse.
 
 * [:file_folder: outputs](/analysis/outputs): 
