@@ -60,7 +60,7 @@ fx.compare.loo <- readRDS(here("analysis", "functions", "fx.compare.loo.rds"))
 fx.fix.eff   <- readRDS(here("analysis", "functions", "fx.fix.eff.rds"))
 # Extract fixed effects from model fitted with Stan
 fx.stan.f.e  <- readRDS(here("analysis", "functions", "fx.stan.f.e.rds"))
-# Inverse logit function 
+# Inverse logit function
 fx_inverse_logit <- readRDS(here("analysis", "functions", "fx_inverse_logit.rds"))
 # Compute fold-change and probability draws for one model
 fx_fold_prob <- readRDS(here("analysis", "functions","fx_fold_prob.rds"))
@@ -72,9 +72,6 @@ fx.ppd.inla.binomial <- readRDS(here("analysis",  "functions", "fx.ppd.inla.bino
 fx.ppd.stan.binomial <- readRDS(here("analysis",  "functions", "fx.ppd.stan.binomial.rds"))
 # Bayesian Posterior Predictive Check (PPC) summary
 fx.ppc.bayes.summary <- readRDS(here("analysis",  "functions", "fx.ppc.bayes.summary.rds"))
-
-
-# ADD the ppc functions! 
 
 # ---- 0.3 Read in data  ----
 
@@ -173,12 +170,12 @@ saveRDS(m.s.nb.lcpo.df, here("analysis", "outputs", "models",
 
 # ---- 1.1.1.3 Posterior predictive check of negative binomial models ----
 
-# 1. Define the observed data for the Negative Binomial model 
+# 1. Define the observed data for the Negative Binomial model
 # (e.g., count of female mosquitoes)
 m.s.nb.1.yobs = d.m$aa_female
 
 # 2. Generate Posterior Predictive Distributions (PPD)
-# Uses fx.ppd.inla.nb to sample 1000 datasets from the posterior 
+# Uses fx.ppd.inla.nb to sample 1000 datasets from the posterior
 # distributions of the latent effects and the 'size' hyperparameter.
 m.s.nb.1.ypred <- fx.ppd.inla.nb(
   inla_object = m.s.nb.1,           # The fitted INLA model object
@@ -189,7 +186,7 @@ m.s.nb.1.ypred <- fx.ppd.inla.nb(
 
 # 3. Calculate Bayesian PPC Summary
 # Compares the observed data (y_obs) against the 1000 simulated datasets (y_pred).
-# This will return a table of statistics (mean, zero_pct, max, var) and 
+# This will return a table of statistics (mean, zero_pct, max, var) and
 # the Bayesian p-value for each.
 ppc_nb <- fx.ppc.bayes.summary(
   y_obs = m.s.nb.1.yobs,
@@ -303,14 +300,14 @@ saveRDS(m.s.b.lcpo.df, here("analysis", "outputs", "models",
 m.s.b.1.yobs = d.m$denv.house.num
 
 # Index Verification
-# Extract indices from the INLA stack to ensure the number of predictions 
+# Extract indices from the INLA stack to ensure the number of predictions
 # matches the number of observed data points.
 est_idx_check <- INLA::inla.stack.index(stk.m.s.b.1.e, tag = "est")$data
 length(est_idx_check)  # Sanity check: must match length(m.s.b.1.yobs)
 
 # Generate Posterior Predictive Distributions (PPD)
 m.s.b.1.ypred <- fx.ppd.inla.binomial(
-  inla_object = m.s.b.1, 
+  inla_object = m.s.b.1,
   stack = stk.m.s.b.1.e,
   n_trials = rep(1, length(est_idx_check)), # Setting trials=1 for Bernoulli outcome
   tag = "est",
@@ -341,16 +338,16 @@ saveRDS(ppc_b1, here("analysis", "outputs", "models","ppc_b1.rds"))
 # Define the observed binary data (e.g., presence/absence of DENV in household)
 m.s.b.2.yobs = d.m$denv.house.num
 
-# Extract indices from the INLA stack to ensure the number of predictions 
+# Extract indices from the INLA stack to ensure the number of predictions
 est_idx_check <- INLA::inla.stack.index(stk.m.s.b.2.e, tag = "est")$data
 length(est_idx_check)  # confirm this matches length(m.s.b.1.yobs)
 
 # Generate Posterior Predictive Distributions (PPD)
 m.s.b.2.ypred <- fx.ppd.inla.binomial(
-  m.s.b.2, 
+  m.s.b.2,
   stack = stk.m.s.b.2.e,
   n_trials = rep(1, length(est_idx_check)),
-  tag = "est", 
+  tag = "est",
   nsamples = 1000
 )
 
@@ -364,8 +361,8 @@ m.s.b.2.ypred_fit <- m.s.b.2.ypred[keep_idx, ]
 
 # Calculate Bayesian PPC Summary
 ppc_b2 <- fx.ppc.bayes.summary(
-  y_obs = m.s.b.2.yobs_fit, 
-  y_pred = m.s.b.2.ypred_fit, 
+  y_obs = m.s.b.2.yobs_fit,
+  y_pred = m.s.b.2.ypred_fit,
   model_label = "Any DENV+ Ae.ae ~ surveillance strategy + Ae.ae abundance (Eq. 3,5)"
 )
 
@@ -395,14 +392,14 @@ m.s.b.fe.df %>%
 # Save the full fixed effects summary for all models
 saveRDS(m.s.b.fe.df, here("analysis", "outputs", "models",  "m.s.b.fe.df.rds"))
 
-# variable              mean  sd   q0.025 q0.5 q0.975 mode kld  fixed     
-# 1                  b0 0.03 1.46   0.01 0.03   0.05 0.03   1 b0+pos.case.contact.f1+aa_female.i 
-# 2 pos.case.contact.f1 0.86 1.85   0.26 0.86   2.87 0.86   1 b0+pos.case.contact.f1+aa_female.i 
-# 3         aa_female.i 1.08 1.03   1.03 1.08   1.14 1.08   1 b0+pos.case.contact.f1+aa_female.i 
+# variable              mean  sd   q0.025 q0.5 q0.975 mode kld  fixed
+# 1                  b0 0.03 1.46   0.01 0.03   0.05 0.03   1 b0+pos.case.contact.f1+aa_female.i
+# 2 pos.case.contact.f1 0.86 1.85   0.26 0.86   2.87 0.86   1 b0+pos.case.contact.f1+aa_female.i
+# 3         aa_female.i 1.08 1.03   1.03 1.08   1.14 1.08   1 b0+pos.case.contact.f1+aa_female.i
 
 # ---- 1.2.2.1 Evaluate fixed effects of logistic models with female counts ----
 
-m.s.b.2.fe.df <- fx.fix.eff(list(m.s.b.2)) 
+m.s.b.2.fe.df <- fx.fix.eff(list(m.s.b.2))
 
 saveRDS(m.s.b.2.fe.df, here("analysis", "outputs", "models",  "m.s.b.2.fe.df.rds"))
 
@@ -495,17 +492,17 @@ saveRDS(m.b.lcpo.df, here("analysis", "outputs", "models",
 # Define the observed binary data (e.g., presence/absence of DENV in household)
 m.b.2.yobs = d.m$denv.house.num
 
-# Extract indices from the INLA stack to ensure the number of predictions 
+# Extract indices from the INLA stack to ensure the number of predictions
 # matches the number of observed data points.
 est_idx_check <- INLA::inla.stack.index(stk.m.b.2.e, tag = "est")$data
 length(est_idx_check)  # confirm this matches length(m.s.b.1.yobs)
 
 # Generate Posterior Predictive Distributions (PPD)
 m.b.2.ypred <- fx.ppd.inla.binomial(
-  m.b.2, 
+  m.b.2,
   stack = stk.m.b.2.e,
   n_trials = rep(1, length(est_idx_check)),
-  tag = "est", 
+  tag = "est",
   nsamples = 1000
 )
 
@@ -518,8 +515,8 @@ m.b.2.ypred_fit <- m.b.2.ypred[keep_idx, ]
 
 # Calculate Bayesian PPC Summary
 ppc_m.b.2 <- fx.ppc.bayes.summary(
-  y_obs = m.b.2.yobs_fit, 
-  y_pred = m.b.2.ypred_fit, 
+  y_obs = m.b.2.yobs_fit,
+  y_pred = m.b.2.ypred_fit,
   model_label = "Any DENV+ Ae.ae ~ Ae.ae abundance (Eq. 3,6)"
 )
 
@@ -708,41 +705,41 @@ lapply(names(loo_list), function(nm) {
 # [[1]]
 # [[1]]$model
 # [1] "Vector DENV prevalence model"
-# 
+#
 # [[1]]$n_flagged
 # [1] 2
-# 
+#
 # [[1]]$flagged_obs
 # [1]  2 18
-# 
+#
 # [[1]]$max_k
 # [1] 0.7641723
-# 
-# 
+#
+#
 # [[2]]
 # [[2]]$model
 # [1] "Vector index model"
-# 
+#
 # [[2]]$n_flagged
 # [1] 0
-# 
+#
 # [[2]]$flagged_obs
 # integer(0)
-# 
+#
 # [[2]]$max_k
 # [1] 0.5833503
-# 
-# 
+#
+#
 # [[3]]
 # [[3]]$model
 # [1] "Average vector abundance model"
-# 
+#
 # [[3]]$n_flagged
 # [1] 1
-# 
+#
 # [[3]]$flagged_obs
 # [1] 2
-# 
+#
 # [[3]]$max_k
 # [1] 0.7792133
 
@@ -985,10 +982,10 @@ fx.loo.diff.table <- function(tbl, dataset_label = "", criterion_label = "") {
   # diag_diff, diag_elpd, and waic/looic, se_waic/se_looic
   ic_col    <- if ("waic" %in% names(tbl)) "waic" else "looic"
   se_ic_col <- if ("waic" %in% names(tbl)) "se_waic" else "se_looic"
-  
+
   ci_lo <- tbl$elpd_diff - 1.96 * tbl$se_diff
   ci_hi <- tbl$elpd_diff + 1.96 * tbl$se_diff
-  
+
   data.frame(
     Dataset                = dataset_label,
     Criterion              = criterion_label,
