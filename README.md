@@ -49,8 +49,8 @@ for Dirichlet-weighted 4-week lags area-level models in developed in STAN.
 This folder contains:
 
     * **`model_functions.R`**: an `R` script with functions used to extract 
-goodness-of-fit metrics and parameter estimates, and perform posterior predictive 
-checks for models fitted INLA and STAN.
+goodness-of-fit metrics and parameter estimates, perform posterior predictive 
+checks and compute R-squared for models fitted INLA and STAN.
     * Pre-compiled function objects saved as `.rds` files for quick loading and reuse.
 
 * [:file_folder: outputs](/analysis/outputs): 

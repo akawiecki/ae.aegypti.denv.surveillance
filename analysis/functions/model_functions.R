@@ -34,8 +34,6 @@ library(sf)
 # R interface to CmdStan, a backend for fitting Stan models
 library(cmdstanr)
 
-# Model check statistics and visualization for Bayesian models
-library(bayesplot)
 
 # ---- 1. Extract fixed effects from models fitted with R-INLA -----------------
 
@@ -94,7 +92,7 @@ saveRDS(fx.fix.eff, here("analysis",  "functions",  "fx.fix.eff.rds"))
 fx.stan.f.e <- function(m) {
   f.fix.eff.exp <- function(x) {
     m[[x]]$summary(
-      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
+      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]"),
       mean, sd,
       ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
       se_mean = ~sd(.x) / sqrt(length(.x))
@@ -129,7 +127,7 @@ saveRDS(fx.stan.f.e, here("analysis",  "functions", "fx.stan.f.e.rds"))
 fx.cmdstanr.f.e <- function(m) {
   f.fix.eff.exp <- function(x) {
     m[[x]]$summary(
-      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]", "sigma"),
+      variables = c("alpha", "beta", "w[1]", "w[2]", "w[3]", "w[4]", "w[5]"),
       mean, sd,
       ~quantile(.x, probs = c(0.025, 0.25, 0.5, 0.975)),
       se_mean = ~sd(.x) / sqrt(length(.x))
@@ -162,25 +160,25 @@ saveRDS(fx.cmdstanr.f.e, here("analysis",  "functions", "fx.cmdstanr.f.e.rds"))
 
 # ---- 4.Compare STAN models with WAIC and PSIS ----------------
 
-# fx.get.log.lik.matrix
+# fx.get.log.lik.matrix 
 # Purpose:  Extract the point‑wise log‑likelihood matrix from a fitted model,
 #           whether the model came from rstan (stanfit) or cmdstanr (CmdStanMCMC).
 # Returns:  A matrix (draws × observations) of log‑likelihood values.
 
 fx.get.log.lik.matrix <- function(fit) {
   # rstan case
-  if (inherits(fit, "stanfit")) {
+  if (inherits(fit, "stanfit")) {             
     # extract_log_lik pulls log_lik for each observation & each draw,
     # merge_chains = TRUE combines all chains into one matrix.
     loo::extract_log_lik(fit, merge_chains = TRUE)
-
-    # cmdstanr case
-  } else if (inherits(fit, "CmdStanMCMC")) {
+    
+    # cmdstanr case 
+  } else if (inherits(fit, "CmdStanMCMC")) {  
     # draws() retrieves the specified variable; format = "matrix" gives
     # a draws‑by‑observations matrix, same shape as the rstan output.
     fit$draws("log_lik", format = "matrix")
-
-    # unsupported type
+    
+    # unsupported type 
   } else {
     # Stop with a clear message so the user knows what went wrong.
     stop("Unsupported fit object class: ", class(fit))
@@ -189,7 +187,7 @@ fx.get.log.lik.matrix <- function(fit) {
 
 saveRDS(fx.get.log.lik.matrix, here("analysis",  "functions", "fx.get.log.lik.matrix.rds"))
 
-# fx.compare.loo
+# fx.compare.loo 
 # Purpose:  Compute WAIC or PSIS‑LOO for a list of models and return
 #           a tidy data.frame whose rows are labelled with the supplied
 #           model names.
@@ -202,24 +200,24 @@ saveRDS(fx.get.log.lik.matrix, here("analysis",  "functions", "fx.get.log.lik.ma
 fx.compare.loo <- function(fit_list, model_names,
                            method = c("waic", "psis")) {
   method <- match.arg(method)   # ensure method is either "waic" or "psis"
-
-  # Compute criterion for each model
+  
+  # Compute criterion for each model 
   crit_list <- lapply(fit_list, function(fit) {
     # 1. Get the log‑likelihood matrix (draws × observations)
     log_lik <- fx.get.log.lik.matrix(fit)
     # 2. Feed it to the appropriate LOO function
     if (method == "waic") loo::waic(log_lik) else loo::loo(log_lik)
   })
-
+  
   # Compare all criteria
   tbl <- loo::loo_compare(crit_list)   # matrix with model1, model2, … rows
-
-  # Replace generic row names with the real model names
+  
+  # Replace generic row names with the real model names 
   # loo_compare names rows "model1", "model2", … according to the
   # original order in fit_list/model_names.
   rownames(tbl) <- model_names[as.integer(gsub("model", "", rownames(tbl)))]
-
-  # Return as a plain data.frame
+  
+  # Return as a plain data.frame 
   as.data.frame(tbl)
 }
 
@@ -227,139 +225,204 @@ saveRDS(fx.compare.loo, here("analysis",  "functions", "fx.compare.loo.rds"))
 
 
 # ---- 5.Compute posterior predictive checks  ----------------
+# Based on Gelman 2019
 
-# Generates Posterior Predictive Distributions (PPD) for an INLA Negative Binomial model.
+## fx.ppd.inla.nb ----
+# Generates fitted means and posterior predictive distributions (PPD) for an INLA Negative Binomial model.
 # Extracts posterior samples of both the latent effects (linear predictors) and the size hyperparameter.
 # Subsets these to the estimation data (using the tag).
 # Simulates new data using stats::rnbinom by applying an exponential link to the latent effects (μ=exp(latent)).
-# Output: A matrix where rows are observations and columns are simulated datasets.
+# Output: a list where mean_pred is the fitted means and y_pred is a matrix where rows are observations and columns are simulated datasets.
 
-fx.ppd.inla.nb <- function(inla_object, stack, tag = "est", nsamples = 1000) {
-  est_idx <- INLA::inla.stack.index(stack, tag = tag)$data
-
-  post_samples <- INLA::inla.posterior.sample(nsamples, inla_object)
-
+fx.ppd.inla.nb <- function(inla_model,est_idx,  nsamples = 1000) {
+  
+  post_samples <- INLA::inla.posterior.sample(nsamples, inla_model)
+  
   theta <- lapply(post_samples, function(x) {
     as.numeric(x[["hyperpar"]][grepl("size for the nbinomial", names(x[["hyperpar"]]))])
   })
-
+  
   latent <- lapply(post_samples, function(x) {
-    pred_all <- as.numeric(x[["latent"]][grepl("Predictor", rownames(x[["latent"]]))])
-    pred_all[est_idx]   # <-- subset to only the estimation rows
+    pred <- as.numeric(x[["latent"]][grepl("Predictor", rownames(x[["latent"]]))])
+    pred[est_idx]   # <-- subset to only the estimation rows
   })
-
+  
   n_obs <- length(latent[[1]])
+
   y_pred <- matrix(NA, n_obs, nsamples)
   for (s.idx in 1:nsamples) {
     y_pred[, s.idx] <- stats::rnbinom(
       n_obs,
-      mu = exp(latent[[s.idx]]),
-      size = theta[[s.idx]]
+      mu = exp(latent[[s.idx]]), # Predicted means
+      size = theta[[s.idx]]      # Overdispersion parameter
     )
   }
-  return(y_pred)
+  
+  mean_pred <- matrix(NA, n_obs, nsamples)
+  for (s.idx in 1:nsamples) {
+    mean_pred[, s.idx] <- exp(latent[[s.idx]]) # Predicted means
+  }
+  
+  out <-  list(mean_pred = t(mean_pred), # n_samples (rows) x n_obs (cols)
+               y_pred = t(y_pred))       # n_samples (rows) x n_obs (cols)
+  
+  return(out)
+
 }
 
 saveRDS(fx.ppd.inla.nb, here("analysis",  "functions", "fx.ppd.inla.nb.rds"))
 
-# Generates PPD for an INLA Binomial/Bernoulli model.
+## fx.ppd.inla.binomial ----
+# Generates fitted means and posterior predictive distributions (PPD) for an INLA Binomial/Bernoulli model.
 # Extracts posterior samples of the latent effects for the estimation set.
 # Converts latent effects (on the logit scale) to probabilities using an inverse-logit function.
 # Simulates new data using stats::rbinom based on the provided number of trials.
-# Output: A matrix of simulated binary or binomial outcomes.
+# Output: a list where mean_pred is the fitted means and y_pred is a matrix where rows are observations 
+# and columns are simulated outcomes.
 
-fx.ppd.inla.binomial <- function(inla_object, stack, n_trials, tag = "est", nsamples = 1000) {
+fx.ppd.inla.binomial <- function(inla_model, est_idx, nsamples = 1000) {
   # n_trials: integer vector, length = n_obs (use rep(1, n_obs) for Bernoulli outcome)
-
-  est_idx <- INLA::inla.stack.index(stack, tag = tag)$data
-
-  post_samples <- INLA::inla.posterior.sample(nsamples, inla_object)
-
+  n_trials = rep(1, length(est_idx))
+  
+  post_samples <- INLA::inla.posterior.sample(nsamples, inla_model)
+ 
   latent <- lapply(post_samples, function(x) {
-    pred_all <- as.numeric(x[["latent"]][grepl("Predictor", rownames(x[["latent"]]))])
-    pred_all[est_idx]   # subset to only the estimation rows
+    pred <- as.numeric(x[["latent"]][grepl("Predictor", rownames(x[["latent"]]))])
+    pred[est_idx]
   })
-
+  
   n_obs <- length(latent[[1]])
   stopifnot(n_obs == length(n_trials))  # sanity check before proceeding
-
+  
   y_pred <- matrix(NA, n_obs, nsamples)
   for (s.idx in 1:nsamples) {
     p_s <- fx_inverse_logit(latent[[s.idx]])
     y_pred[, s.idx] <- stats::rbinom(n_obs, size = n_trials, prob = p_s)
   }
-  return(y_pred)
+  
+  mean_pred <- matrix(NA, n_obs, nsamples)
+  for (s.idx in 1:nsamples) {
+    mean_pred[, s.idx] <- fx_inverse_logit(latent[[s.idx]]) # Predicted means
+  }
+  
+  out <-  list(mean_pred = t(mean_pred), # n_samples (rows) x n_obs (cols)
+               y_pred = t(y_pred))       # n_samples (rows) x n_obs (cols)
+  
+  return(out)
 }
 
-saveRDS(fx.ppd.inla.binomial, here("analysis","functions", "fx.ppd.inla.binomial.rds"))
+saveRDS(fx.ppd.inla.binomial, here("analysis",  "functions", "fx.ppd.inla.binomial.rds"))
 
-# Generates PPD for a Stan Binomial model.
-# Extracts the probability parameter p directly from the Stan fit
+
+## fx.ppd.stan.binomial() ----
+# Generates fitted means and posterior predictive distributions (PPD) for a Stan Binomial model.
+# Extracts the probability parameter p directly from the Stan fit 
 # (since Stan usually stores these on the probability scale already).
 # Randomly samples a subset of draws (up to nsamples) to reduce computation.
 # Simulates new data using stats::rbinom.
-# Output: A matrix of simulated binary or binomial outcomes.
+# Output: a list where mean_pred is the fitted means and y_pred is a matrix where rows are observations 
+# and columns are simulated outcomes.
 
-fx.ppd.stan.binomial <- function(stan_fit, n_trials, nsamples = 1000) {
-  p_draws <- rstan::extract(stan_fit, pars = "p")$p  # n_draws x n_obs, already on probability scale
-  n_draws_total <- nrow(p_draws)
-  draw_idx <- sample(1:n_draws_total, min(nsamples, n_draws_total))
+fx.ppd.stan.binomial <- function(stan_model, n_trials) {
+  p_draws <- rstan::extract(stan_model, pars = "p")$p  # n_draws x n_obs, already on probability scale
 
   n_obs <- ncol(p_draws)
-  y_pred <- matrix(NA, n_obs, length(draw_idx))
-  for (s.idx in seq_along(draw_idx)) {
-    s <- draw_idx[s.idx]
-    y_pred[, s.idx] <- stats::rbinom(n_obs, size = n_trials, prob = p_draws[s, ])
+  nsamples <- nrow(p_draws)
+  
+  y_pred <- matrix(NA, n_obs, nsamples)
+  mean_pred <- matrix(NA, n_obs, nsamples)
+  
+  for (s.idx in 1:nsamples) {
+    y_pred[, s.idx] <- stats::rbinom(n_obs, size = n_trials, prob = p_draws[s.idx, ])
+    mean_pred[, s.idx] <- p_draws[s.idx, ] * n_trials
   }
-  return(y_pred)
+  
+  
+  out <-  list(mean_pred = t(mean_pred), # n_samples (rows) x n_obs (cols)
+               y_pred = t(y_pred))       # n_samples (rows) x n_obs (cols)
+  
+  return(out)
 }
 
 saveRDS(fx.ppd.stan.binomial, here("analysis",  "functions", "fx.ppd.stan.binomial.rds"))
 
+# fx.ppc.bayes.summary() ----
 # Performs a Bayesian Posterior Predictive Check (PPC) summary.
 # Takes a vector of observed data (y_obs) and a matrix of simulated data (y_pred).
-# Calculates a set of "test statistics" (e.g., mean, variance, % of zeros)
+# Calculates a set of "test statistics" (e.g., mean, variance, % of zeros) 
 # for the observed data and for every simulated dataset.
 # Bayesian p-value: Calculates the proportion of simulations where the simulated
 # statistic is ≥ the observed statistic.
-# Output: A summary table
+# Output: A summary table 
 
-fx.ppc.bayes.summary <- function(y_obs, y_pred, model_label,
+fx.ppc.bayes.summary <- function(y_obs,
+                                 y_pred,      # n_samples (rows) x n_obs (cols)
+                                 mean_pred,   # n_samples (rows) x n_obs (cols)
+                                 model_label,
                                  stats = list(
                                    Mean         = mean,
                                    Zero_pct     = function(x) mean(x == 0),
                                    Maximum          = max,
                                    Variance          = stats::var
                                  )) {
-
-  stopifnot(nrow(y_pred) == length(y_obs))
+  
+  stopifnot(ncol(y_pred) == length(y_obs))
+  stopifnot(ncol(mean_pred) == length(y_obs))
   stopifnot(!any(is.na(y_obs)))
 
-  yrep_t <- t(y_pred)  # n_sim x n_obs
-
-  results <- lapply(names(stats), function(stat_name) {
+  # Bayesian p-value
+  bayesian_p <- lapply(names(stats), function(stat_name) {
     stat_fun <- stats[[stat_name]]
     T_obs <- stat_fun(y_obs)
-    T_pred <- apply(yrep_t, 1, stat_fun)
+    T_pred <- apply(y_pred, 1, stat_fun)
     bayes_p <- mean(T_pred >= T_obs)
-
-    data.frame(statistic = stat_name,
+    
+    data.frame(Statistic = stat_name,
                T_obs = T_obs,
                T_pred_mean = mean(T_pred),
-               bayes_p = round(bayes_p, 3))
+               Bayes_p = round(bayes_p, 3),
+               CI_lo       = NA_real_,
+               CI_hi       = NA_real_)
   })
-
-  out <- dplyr::bind_rows(results)
-  out$model <- model_label
-  out$n_obs <- length(y_obs)
-  out <- out[, c("model", "n_obs", "statistic", "T_obs", "T_pred_mean", "bayes_p")]
-  names(out) <- c("Model", "N_obs", "Statistic", "T_obs", "T_pred_mean", "Bayes_p")
+  
+  bayesian_p <- dplyr::bind_rows(bayesian_p)
+  
+  # Bayesian R2
+  e <- -1 * sweep(mean_pred, 2, y_obs)   # residuals: fitted - observed
+  var_mean_pred <- apply(mean_pred, 1, var)
+  var_e <- apply(e, 1, var)
+  r2_draws      <- var_mean_pred / (var_mean_pred + var_e)
+  
+  bayesian_r2 <- data.frame(
+    Statistic   = "Bayes_Rsquared",
+    T_obs       = NA_real_,
+    T_pred_mean = mean(r2_draws),
+    Bayes_p     = NA_real_,
+    CI_lo       = unname(quantile(r2_draws, 0.025)),
+    CI_hi       = unname(quantile(r2_draws, 0.975)))
+  
+  out <- dplyr::bind_rows(bayesian_p, bayesian_r2)
+  out$Model <- model_label
+  out$N_obs <- length(y_obs)
+  out <- out[, c("Model", "N_obs", "Statistic", "T_obs", "T_pred_mean", "Bayes_p", "CI_lo", "CI_hi")]
   out
 }
 
 saveRDS(fx.ppc.bayes.summary, here("analysis",  "functions", "fx.ppc.bayes.summary.rds"))
 
+
 # ---- 6.Compute fold-change and probability  ----------------
+
+
+# inverse logit function
+fx_inverse_logit <- function(x) {
+  p <- 1 / (1 + exp(-x))
+  p <- ifelse(x == Inf, 1, p)
+  p
+}
+
+saveRDS(fx_inverse_logit, here("analysis",  "functions", "fx_inverse_logit.rds"))
+
 
 # Unified function to compute fold-change and probability draws for one model
 # model: a stanfit object (not an index/list - pass the fitted model directly)
@@ -368,11 +431,11 @@ fx_fold_prob <- function(model, range_min, range_max, label = NA) {
   post <- rstan::extract(model, pars = c("alpha", "beta"))
   alpha_draws <- post$alpha
   beta_draws  <- post$beta
-
+  
   fold_draws  <- exp(beta_draws * (range_max - range_min))
   p_min_draws <- inverse_logit(alpha_draws + beta_draws * range_min)
   p_max_draws <- inverse_logit(alpha_draws + beta_draws * range_max)
-
+  
   tibble(
     metric         = label,
     range_min      = range_min,
@@ -394,13 +457,4 @@ fx_fold_prob <- function(model, range_min, range_max, label = NA) {
 
 saveRDS(fx_fold_prob, here("analysis",  "functions", "fx_fold_prob.rds"))
 
-
-# inverse logit function
-fx_inverse_logit <- function(x) {
-  p <- 1 / (1 + exp(-x))
-  p <- ifelse(x == Inf, 1, p)
-  p
-}
-
-saveRDS(fx_inverse_logit, here("analysis",  "functions", "fx_inverse_logit.rds"))
 
