@@ -3,12 +3,21 @@
 
 [![DOI](https://zenodo.org/ZENODO.svg)](https://doi.org/DOI)
 
-# Detection of dengue virus in Aedes aegypti during an urban epidemic in Iquitos, Peru
+# Temporal associations between Aedes aegypti infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)
 
-This repository contains the data and code for our paper:
+This repository contains the data and code for the paper:
 
-> Anna B. Kawiecki, Talia Wong, Danielle J. Harvey, Xiaoli Dong, Thomas W. Scott1, Amy C. Morrison, Christopher M. Barker (2025).
 > *`Temporal associations between Aedes aegypti infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)`*.
+> Anna B. Kawiecki*,
+Talia Wong,
+Helvio Astete,
+Isabel Bazan,
+Stalin Vilcarromero,
+Danielle J. Harvey,
+Xiaoli Dong,
+Thomas W. Scott,
+Amy C. Morrison,
+Christopher M. Barker*.
 > JOURNAL <https://doi.org/DOI>
 
 --------------------------------------------------------------------------------
