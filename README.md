@@ -170,21 +170,6 @@ This project uses two packages not available on CRAN:
 These packages may not be restored automatically via `renv::restore()` due to 
 their non-standard installation sources. Please install them manually.
 
-If you want to replicate the exact environment this project was run in you will 
-require an older version, whihc you will need to locate a 
-local or archived source and install it manually. You can find older versions at 
-the [INLA download website](https://www.r-inla.org/download-install) 
-
-```r
-# To install version 25.10.19 of INLA
-remotes::install_version("INLA", version = "25.10.19",
-repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/testing"),
-dep = TRUE)
-
-# To install version 0.9.0 of cmdstan
-cmdstanr::install_cmdstan(version = "0.9.1")
-```
-
 ## How to cite
 
 Please cite this compendium as:
