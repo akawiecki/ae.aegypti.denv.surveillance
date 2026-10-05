@@ -8,7 +8,7 @@
 This repository contains the data and code for our paper:
 
 > Anna B. Kawiecki, Talia Wong, Danielle J. Harvey, Xiaoli Dong, Thomas W. Scott1, Amy C. Morrison, Christopher M. Barker (2025).
-> *`Detection of dengue virus in Aedes aegypti during an urban epidemic in Iquitos, Peru`*.
+> *`Temporal associations between Aedes aegypti infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)`*.
 > JOURNAL <https://doi.org/DOI>
 
 --------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ cmdstanr::install_cmdstan(version = "0.9.1")
 Please cite this compendium as:
 
 > Kawiecki, (2025). *Compendium of R code and data for
-> `Detection of dengue virus in Aedes aegypti during an urban epidemic in Iquitos, Peru`*.
+> `Temporal associations between Aedes aegypti infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)`*.
 > Accessed [Date]. Online at
 > <https://doi.org/>
 
