@@ -1,5 +1,5 @@
 
-[![DOI](https://zenodo.org/ZENODO.svg)](https://doi.org/10.5281/zenodo.23157494)
+[![DOI](https://zenodo.org/badge/1081870553.svg)](https://doi.org/10.5281/zenodo.23157494)
 
 # Temporal associations between *Aedes aegypti* infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)
 
