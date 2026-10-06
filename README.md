@@ -1,9 +1,7 @@
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+[![DOI](https://zenodo.org/ZENODO.svg)](https://doi.org/10.5281/zenodo.23157494)
 
-[![DOI](https://zenodo.org/ZENODO.svg)](https://doi.org/DOI)
-
-# Temporal associations between Aedes aegypti infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)
+# Temporal associations between *Aedes aegypti* infection dynamics and human dengue incidence during an urban epidemic in Iquitos, Peru (2010 - 2011)
 
 This repository contains the data and code for the paper:
 
@@ -66,9 +64,9 @@ checks and compute R-squared for models fitted INLA and STAN.
 This folder contains:
 
     * **`figures.R`**: an `R` script that generates the figures included in the paper
-  that are stored as `.jpg` files in [:file_folder: figures](/analysis/outputs/figures)
+  that are stored as `.tiff` files in [:file_folder: figures](/analysis/outputs/figures)
 
-    * [:file_folder: figures](/analysis/outputs/figures): Stores `.jpg` files of 
+    * [:file_folder: figures](/analysis/outputs/figures): Stores `.tiff` files of 
   paper figures. 
   
   

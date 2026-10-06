@@ -401,7 +401,7 @@ Sfig.2.plot <-
 
 # Save as a high-resolution JPEG file
 ggsave(here("analysis", "supplementary-materials", "SFig2.jpg"),
-       Sfig.2.plot ,
+       SFig.2.plot ,
        width = 260, height = 150, dpi = 500, units = "mm")
 
 
